@@ -82,3 +82,17 @@ test("budgetStopReason stops at max turns", () => {
   const state = sampleGoalState({ usage: { turnsUsed: 2 } })
   assert.match(budgetStopReason(state) ?? "", /Turn budget reached/)
 })
+
+test("applyCheckpointOutcome fails closed when no rule matches", () => {
+  const state = sampleGoalState({ status: "paused" })
+  assert.throws(
+    () =>
+      applyCheckpointOutcome(
+        state,
+        { decision: { status: "continue", reason: "more work" }, toolCallCount: 1 },
+        { ok: true, skipped: false, durationMs: 1, stdout: "", stderr: "" },
+        { once: false }
+      ),
+    /Unhandled checkpoint outcome/
+  )
+})

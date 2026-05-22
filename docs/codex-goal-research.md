@@ -56,13 +56,13 @@ budget_limited
 
 Codex continuation is conservative: it happens at safe boundaries when the thread is idle, not while another turn is active, not while user input is queued, and not in plan-only mode. Public docs also describe suppression when a continuation turn makes no tool call, to avoid spinning.
 
-Cursor SDK does not expose the same event-driven thread goal primitive, so `cursor-goal` approximates this with:
+`cursor-goal` does not run an in-process agent loop. The goal loop runs in **Cursor Agent chat**; the CLI handles durable state and checkpoint accounting:
 
-- one checkpoint per SDK run;
-- external verification after each checkpoint;
-- state persistence after each checkpoint;
-- max-turn, token, time, and idle budgets;
-- continuation suppression if validation fails and no tool call occurred.
+- one bounded checkpoint per agent turn in chat;
+- shell verification after each checkpoint (when configured);
+- state persistence in `.goal/current.json` after each checkpoint;
+- max-turn budget in goal state;
+- continuation suppression if validation fails and the checkpoint recorded zero tool calls.
 
 ## Model authority boundary
 
@@ -79,9 +79,15 @@ The CLI, not the model, decides whether to accept completion. If a verification 
 
 ## Cursor-specific mapping
 
-Cursor’s SDK exposes programmatic agents with `Agent.create`, local and cloud runtimes, model selection, and streamed events. Cursor’s public SDK examples also use `Cursor.models.list()` to discover model choices. This project defaults to `composer-2.5` and then resolves available models through the SDK.
+The agent loop runs in the user’s Cursor chat session (Composer model selected in the IDE). `cursor-goal` is a small CLI that:
 
-Composer 2.5 is a good default because Cursor describes it as better at sustained long-running work and complex instruction following than Composer 2.
+- writes and reads `.goal/current.json`;
+- runs configured verification commands;
+- records checkpoints from assistant text (`GOAL_STATUS` / `GOAL_REASON`).
+
+`--model` and `CURSOR_GOAL_MODEL` are recorded in state for audit; they do not spawn a separate SDK agent. `--tier` is audit-only metadata.
+
+Composer 2.5 is the documented default because Cursor describes it as better at sustained long-running work and complex instruction following than Composer 2.
 
 ## Sources
 
@@ -91,6 +97,4 @@ Composer 2.5 is a good default because Cursor describes it as better at sustaine
 - OpenAI Codex app commands — https://developers.openai.com/codex/app/commands
 - OpenAI Codex prompting: Goal mode — https://developers.openai.com/codex/prompting
 - OpenAI Codex app-server goal state — https://developers.openai.com/codex/app-server
-- Cursor SDK announcement — https://cursor.com/blog/typescript-sdk
 - Cursor Composer 2.5 announcement — https://cursor.com/blog/composer-2-5
-- Cursor cookbook SDK examples — https://github.com/cursor/cookbook

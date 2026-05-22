@@ -17,6 +17,7 @@ import {
   writeInitialRunLog,
 } from "./state.js"
 import type { GoalAction, ParsedCli } from "./types.js"
+import { PACKAGE_VERSION } from "./version.js"
 import { workingTreeSummary } from "./validation.js"
 
 const CONTINUE_HINT = "Continue in Cursor Agent chat with: /goal resume"
@@ -38,7 +39,7 @@ const actionHandlers: Record<GoalAction, (ctx: HandlerContext) => Promise<void>>
   },
 
   version: async () => {
-    console.log("0.2.0")
+    console.log(PACKAGE_VERSION)
   },
 
   status: async ({ command, stateDir }) => {

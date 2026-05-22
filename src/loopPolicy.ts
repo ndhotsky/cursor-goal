@@ -19,12 +19,10 @@ type CheckpointContext = {
   options: PostCheckpointOptions
 }
 
-type CheckpointRuleResult = "handled" | "continue"
-
 type CheckpointRule = {
   name: string
   matches: (ctx: CheckpointContext) => boolean
-  apply: (ctx: CheckpointContext) => CheckpointRuleResult
+  apply: (ctx: CheckpointContext) => void
 }
 
 const CHECKPOINT_RULES: CheckpointRule[] = [
@@ -34,7 +32,6 @@ const CHECKPOINT_RULES: CheckpointRule[] = [
       outcome.decision.status === "complete" && verificationOk(validation),
     apply: ({ state, outcome }) => {
       setGoalStatus(state, "complete", outcome.decision.reason)
-      return "handled"
     },
   },
   {
@@ -44,7 +41,6 @@ const CHECKPOINT_RULES: CheckpointRule[] = [
     apply: (ctx) => {
       noteCompletionRejectedByValidation(ctx)
       finalizeActiveCheckpoint(ctx)
-      return "handled"
     },
   },
   {
@@ -52,7 +48,6 @@ const CHECKPOINT_RULES: CheckpointRule[] = [
     matches: ({ outcome }) => outcome.decision.status === "blocked",
     apply: ({ state, outcome }) => {
       setGoalStatus(state, "blocked", outcome.decision.reason)
-      return "handled"
     },
   },
   {
@@ -64,7 +59,6 @@ const CHECKPOINT_RULES: CheckpointRule[] = [
         "blocked",
         "Verification failed and the checkpoint made no tool calls; suppressed continuation to avoid a spin loop."
       )
-      return "handled"
     },
   },
   {
@@ -72,7 +66,6 @@ const CHECKPOINT_RULES: CheckpointRule[] = [
     matches: ({ state }) => state.status === "active",
     apply: (ctx) => {
       finalizeActiveCheckpoint(ctx)
-      return "handled"
     },
   },
 ]
@@ -95,8 +88,13 @@ export function applyCheckpointOutcome(
 
   for (const rule of CHECKPOINT_RULES) {
     if (!rule.matches(ctx)) continue
-    if (rule.apply(ctx) === "handled") return
+    rule.apply(ctx)
+    return
   }
+
+  throw new Error(
+    `Unhandled checkpoint outcome (status=${state.status}, decision=${outcome.decision.status}, validationOk=${verificationOk(validation)}, toolCalls=${outcome.toolCallCount}).`
+  )
 }
 
 function verificationOk(validation: ValidationResult) {

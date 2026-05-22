@@ -20,8 +20,9 @@ cursor-goal ...
 
 - OS:
 - Node version:
-- Cursor SDK version:
-- Model:
+- cursor-goal version (`cursor-goal --version`):
+- Cursor app version (optional):
+- Composer model used in chat:
 
 ## Logs
 
