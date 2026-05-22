@@ -6,6 +6,9 @@ import type {
 } from "./types.js"
 import { addHistory, setGoalStatus } from "./state.js"
 
+const ONCE_PAUSE_REASON =
+  "--once completed one checkpoint and paused before automatic continuation."
+
 export function budgetStopReason(state: GoalState) {
   if (state.usage.turnsUsed >= state.budgets.maxTurns) {
     return `Turn budget reached (${state.usage.turnsUsed}/${state.budgets.maxTurns}).`
@@ -14,17 +17,13 @@ export function budgetStopReason(state: GoalState) {
   return undefined
 }
 
-function verificationAllowsCompletion(validation: ValidationResult) {
-  return validation.ok || validation.skipped
-}
-
 export function applyCheckpointOutcome(
   state: GoalState,
   outcome: CheckpointOutcome,
   validation: ValidationResult,
   options: PostCheckpointOptions
 ) {
-  const verificationOk = verificationAllowsCompletion(validation)
+  const verificationOk = validation.ok || validation.skipped
 
   if (outcome.decision.status === "complete" && verificationOk) {
     setGoalStatus(state, "complete", outcome.decision.reason)
@@ -36,10 +35,9 @@ export function applyCheckpointOutcome(
       reason: outcome.decision.reason,
       exitCode: validation.exitCode,
     })
-    state.last.reason = "Model reported completion, but verification failed; continuing while budget remains."
-    if (options.once) {
-      setGoalStatus(state, "paused", "--once completed one checkpoint and paused before automatic continuation.")
-    }
+    state.last.reason =
+      "Model reported completion, but verification failed; continuing while budget remains."
+    pauseIfOnce(state, options)
     return
   }
 
@@ -57,20 +55,20 @@ export function applyCheckpointOutcome(
     return
   }
 
-  finalizeActiveCheckpoint(state, options)
-}
-
-function finalizeActiveCheckpoint(state: GoalState, options: PostCheckpointOptions) {
   if (state.status !== "active") return
 
-  if (options.once) {
-    setGoalStatus(state, "paused", "--once completed one checkpoint and paused before automatic continuation.")
-    return
+  if (!options.once) {
+    addHistory(state, "goal_continues", {
+      reason: outcome.decision.reason,
+      validationOk: validation.ok,
+      validationSkipped: validation.skipped,
+    })
   }
 
-  addHistory(state, "goal_continues", {
-    reason: state.last.decision?.reason,
-    validationOk: state.last.validation?.ok,
-    validationSkipped: state.last.validation?.skipped,
-  })
+  pauseIfOnce(state, options)
+}
+
+function pauseIfOnce(state: GoalState, options: PostCheckpointOptions) {
+  if (state.status !== "active" || !options.once) return
+  setGoalStatus(state, "paused", ONCE_PAUSE_REASON)
 }

@@ -53,6 +53,19 @@ test("once pauses after a continuing checkpoint", () => {
   assert.match(state.last.reason ?? "", /--once/)
 })
 
+test("once pauses when completion is rejected by verification", () => {
+  const state = sampleGoalState()
+  applyCheckpointOutcome(
+    state,
+    { decision: { status: "complete", reason: "looks done" }, toolCallCount: 1 },
+    { ok: false, skipped: false, durationMs: 1, stdout: "", stderr: "missing", exitCode: 1 },
+    { once: true }
+  )
+
+  assert.equal(state.status, "paused")
+  assert.match(state.last.reason ?? "", /--once/)
+})
+
 test("budgetStopReason stops at max turns", () => {
   const state = sampleGoalState({ usage: { turnsUsed: 2 } })
   assert.match(budgetStopReason(state) ?? "", /Turn budget reached/)
