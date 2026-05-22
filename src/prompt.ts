@@ -1,3 +1,4 @@
+import { clipInline } from "./text.js"
 import type { GoalState, ValidationResult } from "./types.js"
 
 export function buildContinuationPrompt(state: GoalState, previousValidation?: ValidationResult) {
@@ -40,12 +41,7 @@ function summarizeValidation(result: ValidationResult) {
   if (result.skipped) return result.reason ?? "Verification skipped."
   const status = result.ok ? "passed" : "failed"
   const exit = result.exitCode === undefined ? "" : ` with exit ${result.exitCode}`
-  const stderr = result.stderr ? ` stderr: ${clip(result.stderr)}` : ""
-  const stdout = result.stdout ? ` stdout: ${clip(result.stdout)}` : ""
+  const stderr = result.stderr ? ` stderr: ${clipInline(result.stderr, 1200)}` : ""
+  const stdout = result.stdout ? ` stdout: ${clipInline(result.stdout, 1200)}` : ""
   return `${status}${exit}.${stdout}${stderr}`
-}
-
-function clip(value: string, max = 1200) {
-  const trimmed = value.replace(/\s+/g, " ").trim()
-  return trimmed.length <= max ? trimmed : `${trimmed.slice(0, max)}…`
 }

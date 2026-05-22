@@ -1,10 +1,8 @@
 import { parseArgs } from "node:util"
 import path from "node:path"
 import {
-  DEFAULT_IDLE_TIMEOUT_MS,
   DEFAULT_MAX_TURNS,
   DEFAULT_MODEL,
-  DEFAULT_TOKEN_BUDGET,
   DEFAULT_VALIDATION_TIMEOUT_MS,
   GOAL_OBJECTIVE_MAX_LENGTH,
   type GoalAction,
@@ -36,16 +34,10 @@ export function parseCli(argv: string[], env = process.env): ParsedCli {
       cwd: { type: "string" },
       "state-dir": { type: "string" },
       "max-turns": { type: "string" },
-      "token-budget": { type: "string" },
-      "time-budget-ms": { type: "string" },
-      "idle-timeout-ms": { type: "string" },
       "validation-timeout-ms": { type: "string" },
       "allow-destructive": { type: "boolean" },
-      "no-continue": { type: "boolean" },
       once: { type: "boolean" },
       json: { type: "boolean" },
-      yes: { type: "boolean", short: "y" },
-      "show-thinking": { type: "boolean" },
       "assistant-file": { type: "string" },
       "tool-calls": { type: "string" },
       help: { type: "boolean", short: "h" },
@@ -100,8 +92,6 @@ Options:
       --model <id>                Default: composer-2.5 or CURSOR_GOAL_MODEL.
       --tier auto|fast|standard   Recorded for reference; Cursor chat uses the composer model you pick.
       --max-turns <n>             Continuation budget. Default: 8.
-      --token-budget <n>          Soft token budget. Default: 50000.
-      --time-budget-ms <n>        Optional wall-clock budget.
       --validation-timeout-ms <n> Timeout for verification command. Default: 300000.
       --allow-destructive         Permit dangerous shell patterns in verification.
       --once                      Pause after one checkpoint if still active.
@@ -129,14 +119,10 @@ function baseCommand(action: GoalAction, parsed: ReturnType<typeof parseArgs>, e
     stateDir: parsed.values["state-dir"] ? path.resolve(String(parsed.values["state-dir"])) : undefined,
     verifyCommand: verifyValues.length > 0 ? verifyValues.join(" && ") : undefined,
     maxTurns: parsePositiveInt(parsed.values["max-turns"], DEFAULT_MAX_TURNS, "--max-turns"),
-    tokenBudget: parsePositiveInt(parsed.values["token-budget"], DEFAULT_TOKEN_BUDGET, "--token-budget"),
-    timeBudgetMs: parseOptionalPositiveInt(parsed.values["time-budget-ms"], "--time-budget-ms"),
-    idleTimeoutMs: parsePositiveInt(parsed.values["idle-timeout-ms"], DEFAULT_IDLE_TIMEOUT_MS, "--idle-timeout-ms"),
     validationTimeoutMs: parsePositiveInt(parsed.values["validation-timeout-ms"], DEFAULT_VALIDATION_TIMEOUT_MS, "--validation-timeout-ms"),
     allowDestructive: Boolean(parsed.values["allow-destructive"]),
     once: Boolean(parsed.values.once),
     json: Boolean(parsed.values.json),
-    yes: Boolean(parsed.values.yes),
     assistantFile: parsed.values["assistant-file"] ? path.resolve(String(parsed.values["assistant-file"])) : undefined,
     toolCalls: parseOptionalNonNegativeInt(parsed.values["tool-calls"], "--tool-calls"),
   }
@@ -172,11 +158,6 @@ function parsePositiveInt(value: unknown, fallback: number, flag: string) {
     throw new Error(`${flag} must be a positive integer.`)
   }
   return n
-}
-
-function parseOptionalPositiveInt(value: unknown, flag: string) {
-  if (value === undefined) return undefined
-  return parsePositiveInt(value, 1, flag)
 }
 
 function parseOptionalNonNegativeInt(value: unknown, flag: string) {

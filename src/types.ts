@@ -1,8 +1,6 @@
 export const GOAL_OBJECTIVE_MAX_LENGTH = 4000
 export const DEFAULT_MODEL = "composer-2.5"
 export const DEFAULT_MAX_TURNS = 8
-export const DEFAULT_TOKEN_BUDGET = 50_000
-export const DEFAULT_IDLE_TIMEOUT_MS = 300_000
 export const DEFAULT_VALIDATION_TIMEOUT_MS = 300_000
 
 export type GoalLifecycleStatus =
@@ -28,21 +26,9 @@ export type GoalAction =
 
 export type ModelTier = "auto" | "fast" | "standard"
 
-export type ModelParamSelection = {
-  id: string
-  value: string
-}
-
-export type ModelSelectionLike = {
-  id: string
-  params?: ModelParamSelection[]
-}
-
 export type ResolvedModelSummary = {
   requested: string
   label: string
-  selection: ModelSelectionLike
-  source: "exact-id" | "display-name" | "normalized" | "fallback"
   warnings: string[]
 }
 
@@ -70,24 +56,13 @@ export type GoalDecision = {
   rawStatus?: string
 }
 
-export type TokenUsage = {
-  inputTokens?: number
-  outputTokens?: number
-}
-
 export type GoalBudgets = {
   maxTurns: number
-  tokenBudget: number
-  timeBudgetMs?: number
-  idleTimeoutMs: number
   validationTimeoutMs: number
 }
 
 export type GoalUsage = {
   turnsUsed: number
-  inputTokens: number
-  outputTokens: number
-  timeUsedMs: number
 }
 
 export type GoalHistoryEvent = {
@@ -131,23 +106,19 @@ export type ParsedCli = {
   cwd: string
   stateDir?: string
   maxTurns: number
-  tokenBudget: number
-  timeBudgetMs?: number
-  idleTimeoutMs: number
   validationTimeoutMs: number
   allowDestructive: boolean
   once: boolean
   json: boolean
-  yes: boolean
   assistantFile?: string
   toolCalls?: number
 }
 
-export type AgentCheckpointResult = {
-  assistantText: string
+export type CheckpointOutcome = {
   decision: GoalDecision
   toolCallCount: number
-  usage: TokenUsage
-  durationMs: number
-  status: string
+}
+
+export type PostCheckpointOptions = {
+  once: boolean
 }

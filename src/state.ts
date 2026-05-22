@@ -1,6 +1,7 @@
 import fs from "node:fs/promises"
 import path from "node:path"
 import crypto from "node:crypto"
+import { truncateText } from "./text.js"
 import type { GoalHistoryEvent, GoalLifecycleStatus, GoalState, ParsedCli, ResolvedModelSummary, ValidationResult } from "./types.js"
 
 const CURRENT_FILE = "current.json"
@@ -55,7 +56,6 @@ export async function writeInitialRunLog(state: GoalState) {
       `- Model requested: ${state.modelRequested}`,
       `- Verification: ${state.verification.command ?? "not configured"}`,
       `- Max turns: ${state.budgets.maxTurns}`,
-      `- Token budget: ${state.budgets.tokenBudget}`,
       "",
       "## Objective",
       "",
@@ -95,16 +95,10 @@ export function createGoalState(command: ParsedCli, model?: ResolvedModelSummary
     },
     budgets: {
       maxTurns: command.once ? 1 : command.maxTurns,
-      tokenBudget: command.tokenBudget,
-      timeBudgetMs: command.timeBudgetMs,
-      idleTimeoutMs: command.idleTimeoutMs,
       validationTimeoutMs: command.validationTimeoutMs,
     },
     usage: {
       turnsUsed: 0,
-      inputTokens: 0,
-      outputTokens: 0,
-      timeUsedMs: 0,
     },
     runLogPath,
     last: {},
@@ -124,9 +118,6 @@ export function updateGoalFromCommand(state: GoalState, command: ParsedCli, mode
   state.verification.timeoutMs = command.validationTimeoutMs
   state.verification.allowDestructive = command.allowDestructive
   state.budgets.maxTurns = command.once ? state.usage.turnsUsed + 1 : command.maxTurns
-  state.budgets.tokenBudget = command.tokenBudget
-  state.budgets.timeBudgetMs = command.timeBudgetMs
-  state.budgets.idleTimeoutMs = command.idleTimeoutMs
   state.budgets.validationTimeoutMs = command.validationTimeoutMs
   addHistory(state, command.action === "edit" ? "goal_edited" : "goal_resumed", { objective: command.objective })
 }
@@ -156,7 +147,6 @@ export function formatGoalStatus(state: GoalState | null) {
     `Objective: ${state.objective}`,
     `Model: ${model}`,
     `Turns: ${state.usage.turnsUsed}/${state.budgets.maxTurns}`,
-    `Tokens: ${state.usage.inputTokens} in / ${state.usage.outputTokens} out / budget ${state.budgets.tokenBudget}`,
     `Verification: ${state.verification.command ?? "not configured"}`,
     validation ? `Last validation: ${validation.ok ? "passed" : "failed"}${validation.exitCode !== undefined ? ` (exit ${validation.exitCode})` : ""}` : "Last validation: none",
     `Changed files: ${changedFiles}`,
@@ -176,16 +166,11 @@ export function validationMarkdown(result: ValidationResult) {
     `Verification command: \`${result.command}\``,
     `Result: ${result.ok ? "pass" : "fail"}${result.exitCode !== undefined ? ` (exit ${result.exitCode})` : ""}`,
     `Duration: ${result.durationMs}ms`,
-    result.stdout ? `\nstdout:\n\`\`\`\n${trimForLog(result.stdout)}\n\`\`\`` : undefined,
-    result.stderr ? `\nstderr:\n\`\`\`\n${trimForLog(result.stderr)}\n\`\`\`` : undefined,
+    result.stdout ? `\nstdout:\n\`\`\`\n${truncateText(result.stdout, 12_000)}\n\`\`\`` : undefined,
+    result.stderr ? `\nstderr:\n\`\`\`\n${truncateText(result.stderr, 12_000)}\n\`\`\`` : undefined,
   ]
     .filter(Boolean)
     .join("\n")
-}
-
-function trimForLog(value: string, max = 12_000) {
-  if (value.length <= max) return value
-  return `${value.slice(0, max)}\n...[truncated ${value.length - max} chars]`
 }
 
 function timestampSlug(iso: string) {

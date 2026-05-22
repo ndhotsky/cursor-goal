@@ -1,4 +1,5 @@
-import { decideNextState, budgetStopReason } from "./loopPolicy.js"
+import { applyCheckpointOutcome, budgetStopReason } from "./loopPolicy.js"
+import { tailText } from "./text.js"
 import { buildContinuationPrompt } from "./prompt.js"
 import {
   addHistory,
@@ -44,7 +45,7 @@ export async function recordCheckpoint(options: {
   state.usage.turnsUsed += 1
   state.last.decision = decision
   state.last.toolCallCount = options.toolCallCount ?? 0
-  state.last.assistantTail = tail(options.assistantText)
+  state.last.assistantTail = tailText(options.assistantText, 4000)
 
   const validation = await runValidation({
     command: state.verification.command,
@@ -70,23 +71,13 @@ export async function recordCheckpoint(options: {
     ].join("\n")
   )
 
-  decideNextState(state, {
-    assistantText: options.assistantText,
-    decision,
-    toolCallCount: options.toolCallCount ?? 0,
-    usage: {},
-    durationMs: 0,
-    status: "finished",
-  }, validation, options.command)
-
-  if (options.command.once && state.status === "active") {
-    setGoalStatus(state, "paused", "--once completed one checkpoint and paused before automatic continuation.")
-  }
+  applyCheckpointOutcome(
+    state,
+    { decision, toolCallCount: options.toolCallCount ?? 0 },
+    validation,
+    { once: options.command.once }
+  )
 
   await saveGoalState(options.stateDir, state)
   return state
-}
-
-function tail(value: string, max = 4000) {
-  return value.length <= max ? value : value.slice(value.length - max)
 }

@@ -10,8 +10,6 @@ export function resolveModelLabel(requested: string, tier: ModelTier): ResolvedM
   return {
     requested: label,
     label,
-    selection: { id: label },
-    source: "exact-id",
     warnings,
   }
 }

@@ -1,9 +1,7 @@
 import type { GoalState, ParsedCli } from "../../src/types.js"
 import {
-  DEFAULT_IDLE_TIMEOUT_MS,
   DEFAULT_MAX_TURNS,
   DEFAULT_MODEL,
-  DEFAULT_TOKEN_BUDGET,
   DEFAULT_VALIDATION_TIMEOUT_MS,
 } from "../../src/types.js"
 
@@ -16,13 +14,10 @@ export function sampleParsedCli(overrides: Partial<ParsedCli> = {}): ParsedCli {
     tier: "auto",
     cwd: process.cwd(),
     maxTurns: DEFAULT_MAX_TURNS,
-    tokenBudget: DEFAULT_TOKEN_BUDGET,
-    idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS,
     validationTimeoutMs: DEFAULT_VALIDATION_TIMEOUT_MS,
     allowDestructive: false,
     once: false,
     json: false,
-    yes: false,
     ...overrides,
   }
 }
@@ -41,8 +36,6 @@ export function sampleGoalState(overrides: Partial<GoalState> = {}): GoalState {
     modelResolved: {
       requested: DEFAULT_MODEL,
       label: DEFAULT_MODEL,
-      selection: { id: DEFAULT_MODEL },
-      source: "exact-id",
       warnings: [],
     },
     tier: "auto",
@@ -53,15 +46,10 @@ export function sampleGoalState(overrides: Partial<GoalState> = {}): GoalState {
     },
     budgets: {
       maxTurns: 2,
-      tokenBudget: DEFAULT_TOKEN_BUDGET,
-      idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS,
       validationTimeoutMs: DEFAULT_VALIDATION_TIMEOUT_MS,
     },
     usage: {
       turnsUsed: 0,
-      inputTokens: 0,
-      outputTokens: 0,
-      timeUsedMs: 0,
     },
     runLogPath: ".goal/runs/smoke-test.md",
     last: {},

@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process"
 import { execFileSync } from "node:child_process"
+import { truncateText } from "./text.js"
 import type { ValidationResult } from "./types.js"
 
 const DANGEROUS_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
@@ -79,8 +80,8 @@ export async function runValidation(options: {
         exitCode,
         signal,
         durationMs: Date.now() - started,
-        stdout: truncate(stdout),
-        stderr: truncate(stderr),
+        stdout: truncateText(stdout, 24_000),
+        stderr: truncateText(stderr, 24_000),
         reason: signal ? `Process exited by signal ${signal}.` : undefined,
       })
     })
@@ -92,8 +93,8 @@ export async function runValidation(options: {
         ok: false,
         skipped: false,
         durationMs: Date.now() - started,
-        stdout: truncate(stdout),
-        stderr: truncate(stderr),
+        stdout: truncateText(stdout, 24_000),
+        stderr: truncateText(stderr, 24_000),
         reason: error.message,
       })
     })
@@ -125,7 +126,3 @@ export function workingTreeSummary(cwd: string): string {
   }
 }
 
-function truncate(value: string, max = 24_000) {
-  if (value.length <= max) return value
-  return `${value.slice(0, max)}\n...[truncated ${value.length - max} chars]`
-}
