@@ -4,7 +4,9 @@
 
 ## Reporting issues
 
-Please open a GitHub issue for security concerns that do not expose private secrets. For sensitive reports, contact the maintainer privately once a maintainer contact is listed in the published repository.
+For non-sensitive bugs, open a [GitHub issue](https://github.com/Niko96-dotcom/cursor-goal/issues/new). Do not paste secrets, tokens, or private `.goal/` logs.
+
+For sensitive reports, use [GitHub Security Advisories](https://github.com/Niko96-dotcom/cursor-goal/security/advisories/new) (private disclosure) or contact [@Niko96-dotcom](https://github.com/Niko96-dotcom) directly.
 
 ## Safety defaults
 

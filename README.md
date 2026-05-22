@@ -85,6 +85,10 @@ See [`docs/smoke-test.md`](docs/smoke-test.md). `npm test` is zero-token smoke f
 
 See [`docs/codex-goal-research.md`](docs/codex-goal-research.md).
 
+## Disclaimer
+
+This project is unofficial and not affiliated with, endorsed by, or sponsored by OpenAI (Codex) or Cursor. Codex and Cursor are trademarks of their respective owners. `cursor-goal` implements a similar workflow inspired by public Codex Goal-mode documentation.
+
 ## License
 
 MIT
