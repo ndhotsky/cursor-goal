@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.3] - 2026-05-23
+
+### Fixed
+
+- `cursor-goal-install-skill` resolves the skill from the npm package when the bin is a symlink under `bin/` (fixes global install on macOS and custom npm prefixes)
+
 ## [0.2.2] - 2026-05-23
 
 ### Added

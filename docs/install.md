@@ -98,6 +98,11 @@ Remove per-project skills with `rm -rf .cursor/skills/goal` if you installed loc
 - Reinstall: `npm install -g cursor-goal`
 - Check PATH includes your global npm bin directory (`npm bin -g`)
 
+**`cursor-goal-install-skill: cd: .../.cursor/skills/goal: No such file`**
+
+- You likely have `0.2.2` or older; upgrade: `npm install -g cursor-goal@latest`
+- Then run `cursor-goal-install-skill --global` again
+
 **Skill works but checkpoints fail**
 
 - Run `cursor-goal` from the project root (where `.goal/` should live)
