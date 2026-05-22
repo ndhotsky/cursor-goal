@@ -1,5 +1,8 @@
 #!/usr/bin/env node
+import fs from "node:fs/promises"
 import { parseCli, usage } from "./args.js"
+import { continuationPromptForState, recordCheckpoint } from "./checkpoint.js"
+import { resolveModelLabel } from "./modelLabel.js"
 import {
   addHistory,
   appendRunLog,
@@ -13,18 +16,9 @@ import {
   updateGoalFromCommand,
   writeInitialRunLog,
 } from "./state.js"
-import type { GoalState } from "./types.js"
 import { workingTreeSummary } from "./validation.js"
 
-let liveState: GoalState | undefined
-let liveStateDir: string | undefined
-
-process.on("SIGINT", () => {
-  void pauseOnSignal("SIGINT").finally(() => process.exit(130))
-})
-process.on("SIGTERM", () => {
-  void pauseOnSignal("SIGTERM").finally(() => process.exit(143))
-})
+const CONTINUE_HINT = "Continue in Cursor Agent chat with: /goal resume"
 
 async function main(argv: string[]) {
   const command = parseCli(argv)
@@ -36,13 +30,12 @@ async function main(argv: string[]) {
   }
 
   if (command.action === "version") {
-    console.log("0.1.0")
+    console.log("0.2.0")
     return
   }
 
   if (command.action === "status") {
-    const state = await loadGoalState(stateDir)
-    printStatus(state, command.json)
+    printStatus(await loadGoalState(stateDir), command.json)
     return
   }
 
@@ -65,12 +58,32 @@ async function main(argv: string[]) {
     return
   }
 
-  const apiKey = requireApiKey()
-  const [{ resolveModel }, { runGoalLoop }] = await Promise.all([
-    import("./modelResolver.js"),
-    import("./loop.js"),
-  ])
-  const model = await resolveModel({ apiKey, requested: command.model, tier: command.tier })
+  if (command.action === "prompt") {
+    const state = await requireState(stateDir)
+    console.log(continuationPromptForState(state))
+    return
+  }
+
+  if (command.action === "checkpoint") {
+    const assistantText = await readAssistantText(command.assistantFile)
+    if (!assistantText.trim()) {
+      throw new Error("cursor-goal checkpoint requires assistant text via stdin or --assistant-file.")
+    }
+
+    const state = await recordCheckpoint({
+      stateDir,
+      command,
+      assistantText,
+      toolCallCount: command.toolCalls,
+    })
+    printStatus(state, command.json)
+    if (state.status === "active") {
+      console.log(CONTINUE_HINT)
+    }
+    return
+  }
+
+  const model = resolveModelLabel(command.model, command.tier)
   for (const warning of model.warnings) console.warn(`[model] ${warning}`)
 
   if (command.action === "set") {
@@ -80,12 +93,8 @@ async function main(argv: string[]) {
     await writeInitialRunLog(state)
     if (dirty) await appendRunLog(state, `## Initial working tree was not clean\n\n\`\`\`\n${dirty}\n\`\`\``)
     await saveGoalState(stateDir, state)
-    liveState = state
-    liveStateDir = stateDir
     console.log(`Goal set: ${state.objective}`)
-    if (!command.noContinue) {
-      await runGoalLoop({ apiKey, stateDir, state, command })
-    }
+    console.log(CONTINUE_HINT)
     printStatus(state, command.json)
     return
   }
@@ -93,13 +102,13 @@ async function main(argv: string[]) {
   if (command.action === "edit" || command.action === "resume") {
     const state = await requireState(stateDir)
     updateGoalFromCommand(state, command, model)
-    await appendRunLog(state, `## ${command.action === "edit" ? "Edited" : "Resumed"}\n\nAt: ${new Date().toISOString()}${command.objective ? `\n\nNew objective:\n${command.objective}` : ""}`)
+    await appendRunLog(
+      state,
+      `## ${command.action === "edit" ? "Edited" : "Resumed"}\n\nAt: ${new Date().toISOString()}${command.objective ? `\n\nNew objective:\n${command.objective}` : ""}`
+    )
     await saveGoalState(stateDir, state)
-    liveState = state
-    liveStateDir = stateDir
-    if (!command.noContinue) {
-      await runGoalLoop({ apiKey, stateDir, state, command })
-    }
+    console.log(command.action === "edit" ? "Goal edited." : "Goal resumed.")
+    console.log(CONTINUE_HINT)
     printStatus(state, command.json)
     return
   }
@@ -107,29 +116,32 @@ async function main(argv: string[]) {
 
 async function requireState(stateDir: string) {
   const state = await loadGoalState(stateDir)
-  if (!state) throw new Error("No goal exists. Set one with: cursor-goal \"<objective>\" --verify \"npm test\"")
+  if (!state) throw new Error("No goal exists. Set one with: /goal \"<objective>\" or cursor-goal \"<objective>\" --verify \"npm test\"")
   return state
 }
 
-function requireApiKey() {
-  const apiKey = process.env.CURSOR_API_KEY
-  if (!apiKey) throw new Error("CURSOR_API_KEY is required for goal set/resume/edit loops. Put it in your shell or .env before running Cursor SDK agents.")
-  return apiKey
+async function readAssistantText(filePath?: string) {
+  if (filePath) {
+    return fs.readFile(filePath, "utf8")
+  }
+
+  if (process.stdin.isTTY) {
+    return ""
+  }
+
+  const chunks: Buffer[] = []
+  for await (const chunk of process.stdin) {
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk)
+  }
+  return Buffer.concat(chunks).toString("utf8")
 }
 
-function printStatus(state: GoalState | null, asJson: boolean) {
+function printStatus(state: Awaited<ReturnType<typeof loadGoalState>>, asJson: boolean) {
   if (asJson) {
     console.log(JSON.stringify(state, null, 2))
   } else {
     console.log(formatGoalStatus(state))
   }
-}
-
-async function pauseOnSignal(signal: string) {
-  if (!liveState || !liveStateDir || liveState.status !== "active") return
-  setGoalStatus(liveState, "paused", `Paused by ${signal}.`)
-  await saveGoalState(liveStateDir, liveState)
-  await appendRunLog(liveState, `## Paused by signal\n\nSignal: ${signal}\nAt: ${new Date().toISOString()}`)
 }
 
 main(process.argv.slice(2)).catch((error) => {

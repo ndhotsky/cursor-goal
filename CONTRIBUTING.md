@@ -14,9 +14,10 @@ npm run build
 ## Development loop
 
 ```bash
-export CURSOR_API_KEY="crsr_..."
 npm run dev -- "Inspect this repo and write a short architecture note" --verify "test -f docs/architecture.md" --once
 ```
+
+Use `/goal` in Cursor Agent chat for the actual agent loop. The CLI records state and checkpoints only.
 
 ## Pull request expectations
 

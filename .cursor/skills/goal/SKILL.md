@@ -1,68 +1,83 @@
 ---
 name: goal
-description: Run or manage a Codex-style persistent goal loop for long-running Cursor Agent work using cursor-goal, Cursor SDK, and Composer 2.5. Use for /goal, /goal pause, /goal resume, /goal clear, /goal edit, durable objectives, verification loops, and evidence-based completion.
+description: Run or manage a Codex-style persistent goal loop in Cursor Agent chat using local .goal state and cursor-goal checkpoint helpers. Use for /goal, /goal pause, /goal resume, /goal clear, /goal edit, durable objectives, verification loops, and evidence-based completion. No Agent SDK or API key required.
 disable-model-invocation: true
 ---
 
 # Goal Skill
 
-Use this skill when the user explicitly invokes `/goal` or asks for a persistent Codex-style goal loop.
+Use this skill when the user invokes `/goal` or asks for a Codex-style persistent goal loop.
 
-This skill delegates to the local `cursor-goal` CLI. It is intentionally user-invoked only because it can run long agent loops and shell verification commands.
+**Run the loop in this Cursor chat session.** You are the agent. Do not spawn `@cursor/sdk`, do not require `CURSOR_API_KEY`, and do not call external agent APIs.
+
+Use the local `cursor-goal` CLI only for durable state, verification, and checkpoint accounting.
 
 ## Command mapping
 
-Interpret the user's slash command like Codex Goal mode:
-
-- `/goal` → show current status with `cursor-goal`.
-- `/goal <objective>` → set or replace the active goal and start the loop.
+- `/goal` → `cursor-goal` (status) or read `.goal/current.json`.
+- `/goal <objective>` → set state, then work the goal in this chat.
 - `/goal pause` → `cursor-goal pause`.
-- `/goal resume` → `cursor-goal resume`.
+- `/goal resume` → `cursor-goal resume`, then continue in this chat.
 - `/goal clear` → `cursor-goal clear`.
-- `/goal edit <objective>` → `cursor-goal edit "<objective>"`.
+- `/goal edit <objective>` → `cursor-goal edit "<objective>"`, then continue.
 
-If the objective names a verification command, pass it with `--verify`. Examples:
+When setting a goal from the CLI surface:
 
 ```bash
-cursor-goal "Make the auth test suite pass without changing public API behavior" --verify "npm test -- auth"
-cursor-goal "Migrate callbacks to async/await while keeping tests and typecheck green" --verify "npm test && npm run typecheck"
+cursor-goal "<objective>" --verify "npm test"
 ```
 
-If no verification command is named, infer a safe one from the repository when obvious:
+If the objective names verification ("verify with …", "verified by …"), pass `--verify`. Otherwise infer a safe command from the repo when obvious (`npm test`, `pnpm test`, `pytest`, etc.).
 
-- Node package with `test` script: `npm test`, `pnpm test`, or `yarn test` according to the detected lockfile.
-- TypeScript package with `typecheck` script: include the typecheck command.
-- Python project with pytest configured: `pytest`.
+## Checkpoint loop (each turn)
 
-If no safe verification command is obvious, run without `--verify` and ensure the goal text includes a concrete artifact or evidence standard.
+1. Load active goal from `.goal/current.json`. If missing on `/goal <objective>`, set it with `cursor-goal`.
+2. If status is not `active`, report status and stop unless the user asked to resume.
+3. Optionally run `cursor-goal prompt` when you need the formatted continuation contract.
+4. Make **one bounded checkpoint** of concrete progress with normal Cursor tools.
+5. End your assistant message with exactly:
+
+```text
+GOAL_STATUS: COMPLETE | CONTINUE | BLOCKED
+GOAL_REASON: <one short evidence-based sentence>
+```
+
+6. Record the checkpoint:
+
+```bash
+cursor-goal checkpoint --tool-calls <n>
+```
+
+Pipe your final assistant text on stdin when needed:
+
+```bash
+cursor-goal checkpoint --tool-calls 3 <<'EOF'
+<summary of work>
+GOAL_STATUS: CONTINUE
+GOAL_REASON: tests still failing on auth module
+EOF
+```
+
+7. Read the printed status. If still `active`, continue in follow-up turns until `complete`, `blocked`, `budget_limited`, or the user pauses.
+
+## Operating contract
+
+- Treat the goal text as both the starting prompt and the completion criteria.
+- Prefer small, auditable changes over sweeping rewrites.
+- Use repository evidence: files, diffs, tests, command output, artifacts.
+- Do not declare complete unless verification passed or you justify why it no longer applies.
+- If blocked by missing credentials, destructive ambiguity, or unavailable verification, use `GOAL_STATUS: BLOCKED`.
+- Do not pause, resume, clear, or edit unless the user asked for that lifecycle action.
+- Default to at most 8 checkpoints unless the user set a different budget in state.
 
 ## Goal quality
 
-A strong goal should include:
+A strong goal includes: end state, verification surface, constraints, boundaries, iteration policy, and blocked stop condition.
 
-1. Desired end state.
-2. Verification surface: command, artifact, benchmark, report, or concrete evidence.
-3. Constraints that must not regress.
-4. Boundaries: files, tools, or systems allowed.
-5. Iteration policy: how to pick the next action after each checkpoint.
-6. Blocked stop condition: when to stop and report what is needed.
-
-When the user's objective is too vague, first draft a better goal in one short paragraph, then run it unless an important destructive/ambiguous choice requires the user's input.
+When the objective is too vague, draft a better goal in one short paragraph, then proceed unless a destructive/ambiguous choice needs user input.
 
 ## Safety
 
-- Never run an unbounded goal. Use the CLI default budget or pass `--max-turns`.
-- Do not run destructive verification commands unless the user explicitly requested them and passed `--allow-destructive`.
-- Do not expose `CURSOR_API_KEY` or any secret.
-- Do not clear, pause, resume, or edit a goal unless the user asked for that lifecycle action.
-- If the goal is blocked by missing credentials, unavailable services, or ambiguous destructive changes, stop and report the blocker.
-
-## Default model
-
-Use Composer 2.5 unless the user requested a different model:
-
-```bash
-cursor-goal "<objective>" --model composer-2.5
-```
-
-The CLI resolves the exact model through Cursor's model catalog.
+- Do not run destructive verification unless the user explicitly requested it and state allows it.
+- Do not expose secrets.
+- If blocked, stop and report what input is needed.

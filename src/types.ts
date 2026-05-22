@@ -14,7 +14,17 @@ export type GoalLifecycleStatus =
 
 export type GoalDecisionStatus = "complete" | "continue" | "blocked"
 
-export type GoalAction = "status" | "set" | "pause" | "resume" | "clear" | "edit" | "help" | "version"
+export type GoalAction =
+  | "status"
+  | "set"
+  | "pause"
+  | "resume"
+  | "clear"
+  | "edit"
+  | "checkpoint"
+  | "prompt"
+  | "help"
+  | "version"
 
 export type ModelTier = "auto" | "fast" | "standard"
 
@@ -126,11 +136,11 @@ export type ParsedCli = {
   idleTimeoutMs: number
   validationTimeoutMs: number
   allowDestructive: boolean
-  noContinue: boolean
   once: boolean
   json: boolean
   yes: boolean
-  showThinking: boolean
+  assistantFile?: string
+  toolCalls?: number
 }
 
 export type AgentCheckpointResult = {

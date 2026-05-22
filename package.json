@@ -1,7 +1,7 @@
 {
   "name": "cursor-goal",
-  "version": "0.1.0",
-  "description": "A Codex-style /goal loop for Cursor SDK agents, optimized for Composer 2.5.",
+  "version": "0.2.0",
+  "description": "Codex-style /goal loops for Cursor Agent chat with local .goal state — no Agent SDK required.",
   "type": "module",
   "license": "MIT",
   "author": "Niko",
@@ -15,7 +15,6 @@
   },
   "keywords": [
     "cursor",
-    "cursor-sdk",
     "composer-2.5",
     "codex",
     "goal",
@@ -49,9 +48,6 @@
     "install-skill": "bash scripts/install-skill.sh",
     "install-skill:global": "bash scripts/install-skill.sh --global",
     "prepack": "npm run build"
-  },
-  "dependencies": {
-    "@cursor/sdk": "^1.0.9"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

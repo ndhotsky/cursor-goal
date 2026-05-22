@@ -21,7 +21,7 @@ git push -u origin main
 Before publishing, confirm:
 
 - `Niko` in `LICENSE` is the copyright holder you want
-- `CURSOR_API_KEY` is never committed (`.env` stays gitignored)
+- `.env` stays gitignored if you add local overrides
 
 Recommended first release checklist:
 

@@ -12,7 +12,17 @@ import {
   type ParsedCli,
 } from "./types.js"
 
-const CONTROL_ACTIONS = new Set<GoalAction>(["status", "pause", "resume", "clear", "edit", "help", "version"])
+const CONTROL_ACTIONS = new Set<GoalAction>([
+  "status",
+  "pause",
+  "resume",
+  "clear",
+  "edit",
+  "checkpoint",
+  "prompt",
+  "help",
+  "version",
+])
 
 export function parseCli(argv: string[], env = process.env): ParsedCli {
   const parsed = parseArgs({
@@ -36,6 +46,8 @@ export function parseCli(argv: string[], env = process.env): ParsedCli {
       json: { type: "boolean" },
       yes: { type: "boolean", short: "y" },
       "show-thinking": { type: "boolean" },
+      "assistant-file": { type: "string" },
+      "tool-calls": { type: "string" },
       help: { type: "boolean", short: "h" },
       version: { type: "boolean" },
     },
@@ -70,35 +82,36 @@ export function parseCli(argv: string[], env = process.env): ParsedCli {
 }
 
 export function usage() {
-  return `cursor-goal — Codex-style /goal loops for Cursor SDK agents
+  return `cursor-goal — Codex-style /goal state for Cursor Agent chat
 
 Usage:
   cursor-goal                                         Show current goal
-  cursor-goal "<objective>" [--verify "npm test"]    Set/replace a goal and start working
+  cursor-goal "<objective>" [--verify "npm test"]    Set/replace a goal (continue in Cursor with /goal resume)
   cursor-goal pause                                  Pause active goal
-  cursor-goal resume                                 Resume paused goal and continue
+  cursor-goal resume                                 Mark goal active (continue in Cursor with /goal resume)
   cursor-goal clear                                  Clear current goal
-  cursor-goal edit "<objective>"                     Replace goal text and continue
+  cursor-goal edit "<objective>"                     Replace goal text
+  cursor-goal prompt                                 Print the continuation prompt for the active goal
+  cursor-goal checkpoint                             Record a checkpoint after agent work (stdin or --assistant-file)
 
 Options:
   -v, --verify <cmd>              Verification command. Repeatable; joined with &&.
       --validate <cmd>            Alias for --verify.
       --model <id>                Default: composer-2.5 or CURSOR_GOAL_MODEL.
-      --tier auto|fast|standard   Prefer a Cursor model variant when exposed by the SDK.
+      --tier auto|fast|standard   Recorded for reference; Cursor chat uses the composer model you pick.
       --max-turns <n>             Continuation budget. Default: 8.
       --token-budget <n>          Soft token budget. Default: 50000.
       --time-budget-ms <n>        Optional wall-clock budget.
-      --idle-timeout-ms <n>       Stop if no stream event arrives. Default: 300000.
       --validation-timeout-ms <n> Timeout for verification command. Default: 300000.
       --allow-destructive         Permit dangerous shell patterns in verification.
-      --once                      Run exactly one checkpoint, then pause if not done.
-      --no-continue               Set/edit state but do not start the loop.
+      --once                      Pause after one checkpoint if still active.
+      --assistant-file <path>     Assistant text for checkpoint (must include GOAL_STATUS lines).
+      --tool-calls <n>            Tool calls made during the checkpoint. Default: 0.
       --json                      Print machine-readable status.
       --state-dir <path>          Default: <cwd>/.goal.
 
 Environment:
-  CURSOR_API_KEY                  Required for set/resume/edit loops.
-  CURSOR_GOAL_MODEL               Optional default model id.
+  CURSOR_GOAL_MODEL               Optional default model id recorded in goal state.
 `
 }
 
@@ -121,11 +134,11 @@ function baseCommand(action: GoalAction, parsed: ReturnType<typeof parseArgs>, e
     idleTimeoutMs: parsePositiveInt(parsed.values["idle-timeout-ms"], DEFAULT_IDLE_TIMEOUT_MS, "--idle-timeout-ms"),
     validationTimeoutMs: parsePositiveInt(parsed.values["validation-timeout-ms"], DEFAULT_VALIDATION_TIMEOUT_MS, "--validation-timeout-ms"),
     allowDestructive: Boolean(parsed.values["allow-destructive"]),
-    noContinue: Boolean(parsed.values["no-continue"]),
     once: Boolean(parsed.values.once),
     json: Boolean(parsed.values.json),
     yes: Boolean(parsed.values.yes),
-    showThinking: Boolean(parsed.values["show-thinking"]),
+    assistantFile: parsed.values["assistant-file"] ? path.resolve(String(parsed.values["assistant-file"])) : undefined,
+    toolCalls: parseOptionalNonNegativeInt(parsed.values["tool-calls"], "--tool-calls"),
   }
 }
 
@@ -164,4 +177,13 @@ function parsePositiveInt(value: unknown, fallback: number, flag: string) {
 function parseOptionalPositiveInt(value: unknown, flag: string) {
   if (value === undefined) return undefined
   return parsePositiveInt(value, 1, flag)
+}
+
+function parseOptionalNonNegativeInt(value: unknown, flag: string) {
+  if (value === undefined) return undefined
+  const n = Number(value)
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error(`${flag} must be a non-negative integer.`)
+  }
+  return n
 }

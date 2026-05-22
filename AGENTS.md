@@ -1,10 +1,12 @@
 # Agent guidance for cursor-goal
 
-This repository builds a small TypeScript CLI around `@cursor/sdk`.
+This repository builds a small TypeScript CLI around local `.goal/` state for Codex-style `/goal` loops in Cursor Agent chat.
 
 Rules:
 
-- Keep dependencies minimal.
+- Keep dependencies minimal. No `@cursor/sdk`.
+- The agent loop runs in Cursor chat on the user's subscription.
+- The CLI manages state, verification, and checkpoint accounting only.
 - Preserve the Codex-style command surface.
 - Do not add telemetry.
 - Do not log secrets.
