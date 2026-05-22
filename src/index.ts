@@ -16,6 +16,7 @@ import {
   updateGoalFromCommand,
   writeInitialRunLog,
 } from "./state.js"
+import type { GoalAction, ParsedCli } from "./types.js"
 import { workingTreeSummary } from "./validation.js"
 
 const CONTINUE_HINT = "Continue in Cursor Agent chat with: /goal resume"
@@ -23,48 +24,50 @@ const CONTINUE_HINT = "Continue in Cursor Agent chat with: /goal resume"
 async function main(argv: string[]) {
   const command = parseCli(argv)
   const stateDir = resolveStateDir(command.cwd, command.stateDir)
+  await actionHandlers[command.action]({ command, stateDir })
+}
 
-  if (command.action === "help") {
+type HandlerContext = {
+  command: ParsedCli
+  stateDir: string
+}
+
+const actionHandlers: Record<GoalAction, (ctx: HandlerContext) => Promise<void>> = {
+  help: async () => {
     console.log(usage())
-    return
-  }
+  },
 
-  if (command.action === "version") {
+  version: async () => {
     console.log("0.2.0")
-    return
-  }
+  },
 
-  if (command.action === "status") {
+  status: async ({ command, stateDir }) => {
     printStatus(await loadGoalState(stateDir), command.json)
-    return
-  }
+  },
 
-  if (command.action === "clear") {
+  clear: async ({ stateDir }) => {
     const existing = await loadGoalState(stateDir)
     if (existing) {
       await appendRunLog(existing, `## Cleared\n\nCleared: ${new Date().toISOString()}`)
     }
     const removed = await clearGoalState(stateDir)
     console.log(removed ? "Goal cleared." : "No goal to clear.")
-    return
-  }
+  },
 
-  if (command.action === "pause") {
+  pause: async ({ command, stateDir }) => {
     const state = await requireState(stateDir)
     setGoalStatus(state, "paused", "Paused by user.")
     await saveGoalState(stateDir, state)
     await appendRunLog(state, `## Paused\n\nPaused: ${new Date().toISOString()}`)
     printStatus(state, command.json)
-    return
-  }
+  },
 
-  if (command.action === "prompt") {
+  prompt: async ({ stateDir }) => {
     const state = await requireState(stateDir)
     console.log(continuationPromptForState(state))
-    return
-  }
+  },
 
-  if (command.action === "checkpoint") {
+  checkpoint: async ({ command, stateDir }) => {
     const assistantText = await readAssistantText(command.assistantFile)
     if (!assistantText.trim()) {
       throw new Error("cursor-goal checkpoint requires assistant text via stdin or --assistant-file.")
@@ -80,13 +83,12 @@ async function main(argv: string[]) {
     if (state.status === "active") {
       console.log(CONTINUE_HINT)
     }
-    return
-  }
+  },
 
-  const model = resolveModelLabel(command.model, command.tier)
-  for (const warning of model.warnings) console.warn(`[model] ${warning}`)
+  set: async ({ command, stateDir }) => {
+    const model = resolveModelLabel(command.model, command.tier)
+    for (const warning of model.warnings) console.warn(`[model] ${warning}`)
 
-  if (command.action === "set") {
     const state = createGoalState(command, model)
     const dirty = workingTreeSummary(state.cwd)
     if (dirty) addHistory(state, "working_tree_dirty_at_start", { status: dirty })
@@ -96,22 +98,32 @@ async function main(argv: string[]) {
     console.log(`Goal set: ${state.objective}`)
     console.log(CONTINUE_HINT)
     printStatus(state, command.json)
-    return
-  }
+  },
 
-  if (command.action === "edit" || command.action === "resume") {
-    const state = await requireState(stateDir)
-    updateGoalFromCommand(state, command, model)
-    await appendRunLog(
-      state,
-      `## ${command.action === "edit" ? "Edited" : "Resumed"}\n\nAt: ${new Date().toISOString()}${command.objective ? `\n\nNew objective:\n${command.objective}` : ""}`
-    )
-    await saveGoalState(stateDir, state)
-    console.log(command.action === "edit" ? "Goal edited." : "Goal resumed.")
-    console.log(CONTINUE_HINT)
-    printStatus(state, command.json)
-    return
-  }
+  edit: async ({ command, stateDir }) => {
+    await editOrResume({ command, stateDir, label: "Edited" })
+  },
+
+  resume: async ({ command, stateDir }) => {
+    await editOrResume({ command, stateDir, label: "Resumed" })
+  },
+}
+
+async function editOrResume(options: { command: ParsedCli; stateDir: string; label: "Edited" | "Resumed" }) {
+  const { command, stateDir, label } = options
+  const model = resolveModelLabel(command.model, command.tier)
+  for (const warning of model.warnings) console.warn(`[model] ${warning}`)
+
+  const state = await requireState(stateDir)
+  updateGoalFromCommand(state, command, model)
+  await appendRunLog(
+    state,
+    `## ${label}\n\nAt: ${new Date().toISOString()}${command.objective ? `\n\nNew objective:\n${command.objective}` : ""}`
+  )
+  await saveGoalState(stateDir, state)
+  console.log(label === "Edited" ? "Goal edited." : "Goal resumed.")
+  console.log(CONTINUE_HINT)
+  printStatus(state, command.json)
 }
 
 async function requireState(stateDir: string) {

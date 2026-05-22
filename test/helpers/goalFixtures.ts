@@ -46,7 +46,6 @@ export function sampleGoalState(overrides: Partial<GoalState> = {}): GoalState {
     },
     budgets: {
       maxTurns: 2,
-      validationTimeoutMs: DEFAULT_VALIDATION_TIMEOUT_MS,
     },
     usage: {
       turnsUsed: 0,

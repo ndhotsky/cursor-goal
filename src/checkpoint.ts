@@ -52,6 +52,7 @@ export async function recordCheckpoint(options: {
     cwd: state.cwd,
     timeoutMs: state.verification.timeoutMs,
     allowDestructive: state.verification.allowDestructive,
+    echo: true,
   })
   state.last.validation = validation
   state.last.filesChanged = listGitChangedFiles(state.cwd)

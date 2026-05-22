@@ -1,8 +1,17 @@
 import fs from "node:fs/promises"
 import path from "node:path"
 import crypto from "node:crypto"
+import { parseGoalState } from "./parseGoalState.js"
 import { truncateText } from "./text.js"
-import type { GoalHistoryEvent, GoalLifecycleStatus, GoalState, ParsedCli, ResolvedModelSummary, ValidationResult } from "./types.js"
+import type {
+  GoalHistoryEvent,
+  GoalHistoryEventName,
+  GoalLifecycleStatus,
+  GoalState,
+  ParsedCli,
+  ResolvedModelSummary,
+  ValidationResult,
+} from "./types.js"
 
 const CURRENT_FILE = "current.json"
 
@@ -17,7 +26,7 @@ export function currentStatePath(stateDir: string) {
 export async function loadGoalState(stateDir: string): Promise<GoalState | null> {
   try {
     const raw = await fs.readFile(currentStatePath(stateDir), "utf8")
-    return JSON.parse(raw) as GoalState
+    return parseGoalState(JSON.parse(raw) as unknown)
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null
     throw error
@@ -94,8 +103,7 @@ export function createGoalState(command: ParsedCli, model?: ResolvedModelSummary
       allowDestructive: command.allowDestructive,
     },
     budgets: {
-      maxTurns: command.once ? 1 : command.maxTurns,
-      validationTimeoutMs: command.validationTimeoutMs,
+      maxTurns: command.maxTurns,
     },
     usage: {
       turnsUsed: 0,
@@ -117,12 +125,11 @@ export function updateGoalFromCommand(state: GoalState, command: ParsedCli, mode
   if (command.verifyCommand) state.verification.command = command.verifyCommand
   state.verification.timeoutMs = command.validationTimeoutMs
   state.verification.allowDestructive = command.allowDestructive
-  state.budgets.maxTurns = command.once ? state.usage.turnsUsed + 1 : command.maxTurns
-  state.budgets.validationTimeoutMs = command.validationTimeoutMs
+  state.budgets.maxTurns = command.maxTurns
   addHistory(state, command.action === "edit" ? "goal_edited" : "goal_resumed", { objective: command.objective })
 }
 
-export function addHistory(state: GoalState, event: string, details?: Record<string, unknown>) {
+export function addHistory(state: GoalState, event: GoalHistoryEventName, details?: Record<string, unknown>) {
   const entry: GoalHistoryEvent = { at: new Date().toISOString(), event }
   if (details) entry.details = details
   state.history.push(entry)

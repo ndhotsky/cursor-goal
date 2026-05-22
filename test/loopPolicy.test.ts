@@ -40,6 +40,18 @@ test("blocks spin loop when verification fails with no tool calls", () => {
   assert.equal(state.status, "blocked")
 })
 
+test("without once stays active after a continuing checkpoint", () => {
+  const state = sampleGoalState()
+  applyCheckpointOutcome(
+    state,
+    { decision: { status: "continue", reason: "more work" }, toolCallCount: 1 },
+    { ok: true, skipped: false, durationMs: 1, stdout: "", stderr: "" },
+    { once: false }
+  )
+
+  assert.equal(state.status, "active")
+})
+
 test("once pauses after a continuing checkpoint", () => {
   const state = sampleGoalState()
   applyCheckpointOutcome(

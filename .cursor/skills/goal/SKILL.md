@@ -60,6 +60,8 @@ EOF
 
 7. Read the printed status. If still `active`, continue in follow-up turns until `complete`, `blocked`, `budget_limited`, or the user pauses.
 
+Optional: pass `--once` on checkpoint to pause after one checkpoint when still active (useful for single-step handoffs). This does not reduce `maxTurns`.
+
 ## Operating contract
 
 - Treat the goal text as both the starting prompt and the completion criteria.
@@ -68,7 +70,9 @@ EOF
 - Do not declare complete unless verification passed or you justify why it no longer applies.
 - If blocked by missing credentials, destructive ambiguity, or unavailable verification, use `GOAL_STATUS: BLOCKED`.
 - Do not pause, resume, clear, or edit unless the user asked for that lifecycle action.
-- Default to at most 8 checkpoints unless the user set a different budget in state.
+- Default to at most 8 checkpoints unless the user set a different budget in state (`budgets.maxTurns` in `.goal/current.json`).
+- `--once` on `cursor-goal checkpoint` pauses after that checkpoint if the goal is still `active`; it does **not** change the turn budget.
+- `--tier` is recorded for audit only; the model you pick in Cursor chat is what runs.
 
 ## Goal quality
 

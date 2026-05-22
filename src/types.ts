@@ -58,16 +58,24 @@ export type GoalDecision = {
 
 export type GoalBudgets = {
   maxTurns: number
-  validationTimeoutMs: number
 }
 
 export type GoalUsage = {
   turnsUsed: number
 }
 
+export type GoalHistoryEventName =
+  | `goal_${GoalLifecycleStatus}`
+  | "goal_created"
+  | "goal_edited"
+  | "goal_resumed"
+  | "completion_rejected_by_validation"
+  | "goal_continues"
+  | "working_tree_dirty_at_start"
+
 export type GoalHistoryEvent = {
   at: string
-  event: string
+  event: GoalHistoryEventName
   details?: Record<string, unknown>
 }
 
@@ -81,6 +89,7 @@ export type GoalState = {
   updatedAt: string
   modelRequested: string
   modelResolved?: ResolvedModelSummary
+  /** Audit/metadata only; does not select the Cursor chat model (see modelLabel). */
   tier: ModelTier
   verification: ValidationConfig
   budgets: GoalBudgets

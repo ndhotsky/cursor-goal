@@ -9,6 +9,74 @@ import { addHistory, setGoalStatus } from "./state.js"
 const ONCE_PAUSE_REASON =
   "--once completed one checkpoint and paused before automatic continuation."
 
+const COMPLETION_REJECTED_REASON =
+  "Model reported completion, but verification failed; continuing while budget remains."
+
+type CheckpointContext = {
+  state: GoalState
+  outcome: CheckpointOutcome
+  validation: ValidationResult
+  options: PostCheckpointOptions
+}
+
+type CheckpointRuleResult = "handled" | "continue"
+
+type CheckpointRule = {
+  name: string
+  matches: (ctx: CheckpointContext) => boolean
+  apply: (ctx: CheckpointContext) => CheckpointRuleResult
+}
+
+const CHECKPOINT_RULES: CheckpointRule[] = [
+  {
+    name: "complete_with_verification",
+    matches: ({ outcome, validation }) =>
+      outcome.decision.status === "complete" && verificationOk(validation),
+    apply: ({ state, outcome }) => {
+      setGoalStatus(state, "complete", outcome.decision.reason)
+      return "handled"
+    },
+  },
+  {
+    name: "complete_rejected_by_validation",
+    matches: ({ outcome, validation }) =>
+      outcome.decision.status === "complete" && !verificationOk(validation),
+    apply: (ctx) => {
+      noteCompletionRejectedByValidation(ctx)
+      finalizeActiveCheckpoint(ctx)
+      return "handled"
+    },
+  },
+  {
+    name: "blocked_decision",
+    matches: ({ outcome }) => outcome.decision.status === "blocked",
+    apply: ({ state, outcome }) => {
+      setGoalStatus(state, "blocked", outcome.decision.reason)
+      return "handled"
+    },
+  },
+  {
+    name: "verification_failed_no_tool_calls",
+    matches: ({ outcome, validation }) => !validation.ok && outcome.toolCallCount === 0,
+    apply: ({ state }) => {
+      setGoalStatus(
+        state,
+        "blocked",
+        "Verification failed and the checkpoint made no tool calls; suppressed continuation to avoid a spin loop."
+      )
+      return "handled"
+    },
+  },
+  {
+    name: "active_continue",
+    matches: ({ state }) => state.status === "active",
+    apply: (ctx) => {
+      finalizeActiveCheckpoint(ctx)
+      return "handled"
+    },
+  },
+]
+
 export function budgetStopReason(state: GoalState) {
   if (state.usage.turnsUsed >= state.budgets.maxTurns) {
     return `Turn budget reached (${state.usage.turnsUsed}/${state.budgets.maxTurns}).`
@@ -23,38 +91,29 @@ export function applyCheckpointOutcome(
   validation: ValidationResult,
   options: PostCheckpointOptions
 ) {
-  const verificationOk = validation.ok || validation.skipped
+  const ctx: CheckpointContext = { state, outcome, validation, options }
 
-  if (outcome.decision.status === "complete" && verificationOk) {
-    setGoalStatus(state, "complete", outcome.decision.reason)
-    return
+  for (const rule of CHECKPOINT_RULES) {
+    if (!rule.matches(ctx)) continue
+    if (rule.apply(ctx) === "handled") return
   }
+}
 
-  if (outcome.decision.status === "complete" && !verificationOk) {
-    addHistory(state, "completion_rejected_by_validation", {
-      reason: outcome.decision.reason,
-      exitCode: validation.exitCode,
-    })
-    state.last.reason =
-      "Model reported completion, but verification failed; continuing while budget remains."
-    pauseIfOnce(state, options)
-    return
-  }
+function verificationOk(validation: ValidationResult) {
+  return validation.ok || validation.skipped
+}
 
-  if (outcome.decision.status === "blocked") {
-    setGoalStatus(state, "blocked", outcome.decision.reason)
-    return
-  }
+function noteCompletionRejectedByValidation(ctx: CheckpointContext) {
+  const { state, outcome, validation } = ctx
+  addHistory(state, "completion_rejected_by_validation", {
+    reason: outcome.decision.reason,
+    exitCode: validation.exitCode,
+  })
+  state.last.reason = COMPLETION_REJECTED_REASON
+}
 
-  if (!validation.ok && outcome.toolCallCount === 0) {
-    setGoalStatus(
-      state,
-      "blocked",
-      "Verification failed and the checkpoint made no tool calls; suppressed continuation to avoid a spin loop."
-    )
-    return
-  }
-
+function finalizeActiveCheckpoint(ctx: CheckpointContext) {
+  const { state, outcome, validation, options } = ctx
   if (state.status !== "active") return
 
   if (!options.once) {

@@ -17,6 +17,12 @@ test("resume is a control action", () => {
   assert.equal(parseCli(["resume"], {}).action, "resume")
 })
 
+test("set keyword maps to set action", () => {
+  const parsed = parseCli(["set", "Ship", "the", "fix"], {})
+  assert.equal(parsed.action, "set")
+  assert.equal(parsed.objective, "Ship the fix")
+})
+
 test("rejects invalid tier", () => {
   assert.throws(() => parseCli(["Fix", "--tier", "warp-speed"], {}), /Invalid --tier/)
 })

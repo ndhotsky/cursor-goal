@@ -10,17 +10,23 @@ import {
   type ParsedCli,
 } from "./types.js"
 
-const CONTROL_ACTIONS = new Set<GoalAction>([
-  "status",
-  "pause",
-  "resume",
-  "clear",
-  "edit",
-  "checkpoint",
-  "prompt",
-  "help",
-  "version",
-])
+type CliActionSpec = {
+  action: GoalAction
+  objectiveFromRest: boolean
+}
+
+const CLI_ACTION_SPECS: Record<string, CliActionSpec> = {
+  status: { action: "status", objectiveFromRest: false },
+  set: { action: "set", objectiveFromRest: true },
+  pause: { action: "pause", objectiveFromRest: false },
+  resume: { action: "resume", objectiveFromRest: false },
+  clear: { action: "clear", objectiveFromRest: false },
+  edit: { action: "edit", objectiveFromRest: true },
+  checkpoint: { action: "checkpoint", objectiveFromRest: false },
+  prompt: { action: "prompt", objectiveFromRest: false },
+  help: { action: "help", objectiveFromRest: false },
+  version: { action: "version", objectiveFromRest: false },
+}
 
 export function parseCli(argv: string[], env = process.env): ParsedCli {
   const parsed = parseArgs({
@@ -53,24 +59,26 @@ export function parseCli(argv: string[], env = process.env): ParsedCli {
     return baseCommand("version", parsed, env)
   }
 
-  const positionals = parsed.positionals
-  const first = positionals[0]?.toLowerCase()
+  const resolved = resolveCliAction(parsed.positionals)
+  return validateObjectiveIfNeeded({
+    ...baseCommand(resolved.action, parsed, env),
+    objective: resolved.objective,
+  })
+}
 
-  if (!first) {
-    return baseCommand("status", parsed, env)
+function resolveCliAction(positionals: string[]): { action: GoalAction; objective?: string } {
+  if (positionals.length === 0) {
+    return { action: "status" }
   }
 
-  if (CONTROL_ACTIONS.has(first as GoalAction)) {
-    const action = first as GoalAction
-    const objective = action === "edit" ? joinObjective(positionals.slice(1)) : undefined
-    return validateObjectiveIfNeeded({ ...baseCommand(action, parsed, env), objective })
+  const token = positionals[0]!.toLowerCase()
+  const spec = CLI_ACTION_SPECS[token]
+  if (spec) {
+    const objective = spec.objectiveFromRest ? joinObjective(positionals.slice(1)) : undefined
+    return { action: spec.action, objective: objective || undefined }
   }
 
-  if (first === "set") {
-    return validateObjectiveIfNeeded({ ...baseCommand("set", parsed, env), objective: joinObjective(positionals.slice(1)) })
-  }
-
-  return validateObjectiveIfNeeded({ ...baseCommand("set", parsed, env), objective: joinObjective(positionals) })
+  return { action: "set", objective: joinObjective(positionals) }
 }
 
 export function usage() {
@@ -90,11 +98,11 @@ Options:
   -v, --verify <cmd>              Verification command. Repeatable; joined with &&.
       --validate <cmd>            Alias for --verify.
       --model <id>                Default: composer-2.5 or CURSOR_GOAL_MODEL.
-      --tier auto|fast|standard   Recorded for reference; Cursor chat uses the composer model you pick.
-      --max-turns <n>             Continuation budget. Default: 8.
+      --tier auto|fast|standard   Recorded for audit only; Cursor chat uses the composer model you pick.
+      --max-turns <n>             Continuation budget. Default: 8. Independent of --once.
       --validation-timeout-ms <n> Timeout for verification command. Default: 300000.
       --allow-destructive         Permit dangerous shell patterns in verification.
-      --once                      Pause after one checkpoint if still active.
+      --once                      After a checkpoint, pause if still active (does not change turn budget).
       --assistant-file <path>     Assistant text for checkpoint (must include GOAL_STATUS lines).
       --tool-calls <n>            Tool calls made during the checkpoint. Default: 0.
       --json                      Print machine-readable status.

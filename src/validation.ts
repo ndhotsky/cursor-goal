@@ -30,7 +30,9 @@ export async function runValidation(options: {
   cwd: string
   timeoutMs: number
   allowDestructive: boolean
+  echo?: boolean
 }): Promise<ValidationResult> {
+  const echo = options.echo ?? true
   if (!options.command) {
     return {
       ok: true,
@@ -63,12 +65,12 @@ export async function runValidation(options: {
 
     child.stdout?.on("data", (chunk: Buffer) => {
       stdout += chunk.toString("utf8")
-      process.stdout.write(chunk)
+      if (echo) process.stdout.write(chunk)
     })
 
     child.stderr?.on("data", (chunk: Buffer) => {
       stderr += chunk.toString("utf8")
-      process.stderr.write(chunk)
+      if (echo) process.stderr.write(chunk)
     })
 
     child.on("close", (exitCode, signal) => {
