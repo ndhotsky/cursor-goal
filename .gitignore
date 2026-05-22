@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.goal/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+coverage/
+.nyc_output/
+.cache/
+.tmp/
