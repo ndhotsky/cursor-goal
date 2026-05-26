@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.1] - 2026-05-26
+
+### Changed
+
+- Clarified public README and install wording around the in-chat Cursor workflow.
+- Removed private future-confidence and release-copy planning notes from packaged docs.
+- Dropped unused single-package pnpm workspace metadata.
+
 ## [0.3.0] - 2026-05-26
 
 ### Added
@@ -56,4 +64,4 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Initial public release: Codex-style `/goal` loop for Cursor Agent chat
 - CLI for `.goal/` state, verification, and checkpoints
-- Goal skill for in-chat loop (no Agent SDK)
+- Goal skill for the in-chat loop

@@ -66,7 +66,6 @@ cp -R "$PKG/.cursor/skills/goal" ~/.cursor/skills/goal
 
 - **Node.js 22+** — for the CLI
 - **Cursor Agent chat** — the agent loop runs in chat on your subscription
-- **No API key** — does not use `@cursor/sdk`
 
 Optional env (see `.env.example`):
 

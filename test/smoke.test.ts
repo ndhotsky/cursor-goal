@@ -26,7 +26,7 @@ function runCli(args: string[], env: NodeJS.ProcessEnv = process.env) {
   }
 }
 
-test("CLI lifecycle smoke without agent SDK", async () => {
+test("CLI lifecycle smoke", async () => {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "cursor-goal-smoke-"))
   const stateDir = path.join(tmp, ".goal")
 

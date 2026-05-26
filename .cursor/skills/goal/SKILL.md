@@ -1,6 +1,6 @@
 ---
 name: goal
-description: Run or manage a Codex-style persistent goal loop in Cursor Agent chat using cursor-goal checkpoint helpers. Use for /goal, /goal pause, /goal resume, /goal clear, /goal edit, durable objectives, verification loops, and evidence-based completion. No Agent SDK or API key required.
+description: Run or manage a Codex-style persistent goal loop in Cursor Agent chat using cursor-goal checkpoint helpers. Use for /goal, /goal pause, /goal resume, /goal clear, /goal edit, durable objectives, verification loops, and evidence-based completion.
 disable-model-invocation: true
 ---
 
@@ -10,7 +10,7 @@ Install: `cursor-goal-install-skill --global` after `npm install -g cursor-goal`
 
 Use this skill when the user invokes `/goal` or asks for a Codex-style persistent goal loop.
 
-**Run the loop in this Cursor chat session.** You are the agent. Do not spawn `@cursor/sdk`, do not require `CURSOR_API_KEY`, and do not call external agent APIs.
+**Run the loop in this Cursor chat session.** You are the agent. Do not start a separate agent process or move the loop outside this chat.
 
 Use the local `cursor-goal` CLI only for durable state, verification, and checkpoint accounting.
 

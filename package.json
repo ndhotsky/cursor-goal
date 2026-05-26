@@ -1,7 +1,7 @@
 {
   "name": "cursor-goal",
-  "version": "0.3.0",
-  "description": "Codex-style /goal loops for Cursor Agent chat with durable local state — no Agent SDK required.",
+  "version": "0.3.1",
+  "description": "Codex-style /goal loops for Cursor Agent chat with durable local state.",
   "type": "module",
   "license": "MIT",
   "author": "Niko",
@@ -58,7 +58,6 @@
     "tsx": "^4.20.0",
     "typescript": "^5.8.0"
   },
-  "packageManager": "pnpm@10.10.0",
   "publishConfig": {
     "access": "public"
   }

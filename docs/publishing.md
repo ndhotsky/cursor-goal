@@ -31,12 +31,12 @@ Optional live smoke (temp directory): see [`smoke-test.md`](smoke-test.md).
 Tag should point at `main` after CI is green:
 
 ````bash
-gh release create v0.3.0 --title "v0.3.0" --notes-file - <<'EOF'
+gh release create v0.3.1 --title "v0.3.1" --notes-file - <<'EOF'
 ## Summary
 
-- Native Codex `/goal` parity: default state now lives outside the workspace.
-- Added native-vs-Cursor parity harness and documentation.
-- Resume now preserves existing goal settings unless flags are explicitly provided.
+- Public repo polish: clearer in-chat Cursor workflow language.
+- Removed private future-confidence and launch-copy notes from packaged docs.
+- Dropped unused single-package pnpm workspace metadata.
 - See [CHANGELOG.md](https://github.com/Niko96-dotcom/cursor-goal/blob/main/CHANGELOG.md) for full notes.
 
 ## Install

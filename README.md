@@ -2,7 +2,7 @@
 
 A Codex-style `/goal` loop for **Cursor Agent chat**, with durable local state outside the workspace by default.
 
-The agent loop runs in Cursor on your subscription — like Codex Goal mode. The CLI does not spawn a second agent via `@cursor/sdk`. It manages goal state, verification, and checkpoint accounting while **you** (or `/goal` in chat) do the work.
+The agent loop runs in your existing Cursor chat, similar to Codex Goal mode. The CLI manages goal state, verification, and checkpoint accounting while **you** and the in-chat `/goal` skill do the work.
 
 **Install (npm):** `npm install -g cursor-goal && cursor-goal-install-skill --global`
 
@@ -23,8 +23,6 @@ The agent loop runs in Cursor on your subscription — like Codex Goal mode. The
 - Node.js 22+
 - Cursor Agent chat (for the loop itself)
 - `cursor-goal` on PATH and the goal skill installed (see [Install](#install))
-
-No API key. No Agent SDK.
 
 ## Install
 
@@ -111,8 +109,6 @@ See [`docs/smoke-test.md`](docs/smoke-test.md). `npm test` is zero-token smoke f
 | [`docs/publishing.md`](docs/publishing.md) | Releases and npm CI |
 | [`docs/codex-goal-research.md`](docs/codex-goal-research.md) | Codex Goal-mode alignment notes |
 | [`docs/native-parity.md`](docs/native-parity.md) | Native Codex vs Cursor parity harness and contract |
-| [`docs/confidence-broadening-plan.md`](docs/confidence-broadening-plan.md) | Next-context plan for expanding parity confidence |
-| [`docs/release-0.3.0.md`](docs/release-0.3.0.md) | GitHub release notes and X launch copy |
 | [`CHANGELOG.md`](CHANGELOG.md) | Version history |
 
 ## Contributing

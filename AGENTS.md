@@ -6,7 +6,7 @@ End-user install: `docs/install.md`. Releases: `docs/publishing.md`, `CHANGELOG.
 
 Rules:
 
-- Keep dependencies minimal. No `@cursor/sdk`.
+- Keep dependencies minimal. Do not add agent-runtime SDK dependencies.
 - The agent loop runs in Cursor chat on the user's subscription.
 - The CLI manages state, verification, and checkpoint accounting only.
 - Preserve the Codex-style command surface.

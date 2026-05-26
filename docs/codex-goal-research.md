@@ -58,7 +58,7 @@ budget_limited
 
 Codex continuation is conservative: it happens at safe boundaries when the thread is idle, not while another turn is active, not while user input is queued, and not in plan-only mode. Public docs also describe suppression when a continuation turn makes no tool call, to avoid spinning.
 
-`cursor-goal` does not run an in-process agent loop. The goal loop runs in **Cursor Agent chat**; the CLI handles durable state and checkpoint accounting:
+The goal loop runs in **Cursor Agent chat**; the CLI handles durable state and checkpoint accounting:
 
 - one bounded checkpoint per agent turn in chat;
 - shell verification after each checkpoint (when configured);
@@ -87,7 +87,7 @@ The agent loop runs in the user’s Cursor chat session (Composer model selected
 - runs configured verification commands;
 - records checkpoints from assistant text (`GOAL_STATUS` / `GOAL_REASON`).
 
-`--model` and `CURSOR_GOAL_MODEL` are recorded in state for audit; they do not spawn a separate SDK agent. `--tier` is audit-only metadata.
+`--model` and `CURSOR_GOAL_MODEL` are recorded in state for audit. `--tier` is audit-only metadata.
 
 Composer 2.5 is the documented default because Cursor describes it as better at sustained long-running work and complex instruction following than Composer 2.
 

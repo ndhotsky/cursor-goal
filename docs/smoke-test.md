@@ -1,6 +1,6 @@
 # Smoke verification
 
-Zero-token proof that `cursor-goal` behaves correctly without any Agent SDK.
+Zero-token proof that the `cursor-goal` CLI lifecycle and checkpoint behavior work locally.
 
 ## Prerequisites
 
@@ -48,4 +48,4 @@ cursor-goal
 cursor-goal --json
 ```
 
-Uses your Cursor subscription. No API key.
+Uses your Cursor subscription.
