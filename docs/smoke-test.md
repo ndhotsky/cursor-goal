@@ -45,7 +45,7 @@ Automated E2E in a temp directory: set goal → create artifact → `checkpoint`
 
 ```bash
 cursor-goal
-cat .goal/current.json
+cursor-goal --json
 ```
 
 Uses your Cursor subscription. No API key.

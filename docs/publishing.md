@@ -30,11 +30,13 @@ Optional live smoke (temp directory): see [`smoke-test.md`](smoke-test.md).
 
 Tag should point at `main` after CI is green:
 
-```bash
-gh release create v0.2.2 --title "v0.2.2" --notes-file - <<'EOF'
+````bash
+gh release create v0.3.0 --title "v0.3.0" --notes-file - <<'EOF'
 ## Summary
 
-- npm-first install docs and `cursor-goal-install-skill` for global skill setup.
+- Native Codex `/goal` parity: default state now lives outside the workspace.
+- Added native-vs-Cursor parity harness and documentation.
+- Resume now preserves existing goal settings unless flags are explicitly provided.
 - See [CHANGELOG.md](https://github.com/Niko96-dotcom/cursor-goal/blob/main/CHANGELOG.md) for full notes.
 
 ## Install
@@ -48,7 +50,7 @@ Then in Cursor Agent chat: `/goal <objective>`
 
 Docs: https://github.com/Niko96-dotcom/cursor-goal/blob/main/docs/install.md
 EOF
-```
+````
 
 Publishing a GitHub release triggers `.github/workflows/publish-npm.yml` when Trusted Publisher is configured.
 

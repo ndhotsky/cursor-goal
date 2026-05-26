@@ -1,6 +1,6 @@
 ---
 name: goal
-description: Run or manage a Codex-style persistent goal loop in Cursor Agent chat using local .goal state and cursor-goal checkpoint helpers. Use for /goal, /goal pause, /goal resume, /goal clear, /goal edit, durable objectives, verification loops, and evidence-based completion. No Agent SDK or API key required.
+description: Run or manage a Codex-style persistent goal loop in Cursor Agent chat using cursor-goal checkpoint helpers. Use for /goal, /goal pause, /goal resume, /goal clear, /goal edit, durable objectives, verification loops, and evidence-based completion. No Agent SDK or API key required.
 disable-model-invocation: true
 ---
 
@@ -16,7 +16,7 @@ Use the local `cursor-goal` CLI only for durable state, verification, and checkp
 
 ## Command mapping
 
-- `/goal` → `cursor-goal` (status) or read `.goal/current.json`.
+- `/goal` → `cursor-goal` (status).
 - `/goal <objective>` → set state, then work the goal in this chat.
 - `/goal pause` → `cursor-goal pause`.
 - `/goal resume` → `cursor-goal resume`, then continue in this chat.
@@ -33,7 +33,7 @@ If the objective names verification ("verify with …", "verified by …"), pass
 
 ## Checkpoint loop (each turn)
 
-1. Load active goal from `.goal/current.json`. If missing on `/goal <objective>`, set it with `cursor-goal`.
+1. Load active goal with `cursor-goal`. If missing on `/goal <objective>`, set it with `cursor-goal`.
 2. If status is not `active`, report status and stop unless the user asked to resume.
 3. Optionally run `cursor-goal prompt` when you need the formatted continuation contract.
 4. Make **one bounded checkpoint** of concrete progress with normal Cursor tools.
@@ -74,9 +74,10 @@ For the full continuation contract (same text `cursor-goal prompt` prints), run 
 - Do not declare complete unless verification passed or you justify why it no longer applies.
 - If blocked by missing credentials, destructive ambiguity, or unavailable verification, use `GOAL_STATUS: BLOCKED`.
 - Do not pause, resume, clear, or edit unless the user asked for that lifecycle action.
-- Default to at most 8 checkpoints unless the user set a different budget in state (`budgets.maxTurns` in `.goal/current.json`).
+- Default to at most 8 checkpoints unless the user set a different budget in state.
 - `--once` on `cursor-goal checkpoint` pauses after that checkpoint if the goal is still `active`; it does **not** change the turn budget.
 - `--tier` is recorded for audit only; the model you pick in Cursor chat is what runs.
+- Default state is stored outside the workspace for native Codex parity. Use `--state-dir .goal` or `CURSOR_GOAL_STATE_SCOPE=workspace` only when the user explicitly wants legacy workspace-local state.
 
 ## Goal quality
 

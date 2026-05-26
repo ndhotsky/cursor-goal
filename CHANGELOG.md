@@ -4,6 +4,20 @@ All notable changes to this project are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] - 2026-05-26
+
+### Added
+
+- Native Codex `/goal` parity harness covering single-file, multi-file, failing-checkpoint resume, already-complete, and fresh-process resume scenarios.
+- Native parity documentation with the current evidence report and the observable contract used for comparison.
+- Environment overrides for external state directories: `CURSOR_GOAL_STATE_DIR` and legacy workspace scope via `CURSOR_GOAL_STATE_SCOPE=workspace`.
+
+### Changed
+
+- Default goal state now lives outside the workspace under the user state directory for native Codex parity, instead of creating workspace `.goal/` files by default.
+- `/goal resume` preserves existing goal settings unless the user explicitly supplies override flags.
+- README, install, smoke-test, publishing, security, and issue-template docs now describe the external-state default.
+
 ## [0.2.3] - 2026-05-23
 
 ### Fixed

@@ -1,6 +1,7 @@
 import fs from "node:fs/promises"
 import path from "node:path"
 import crypto from "node:crypto"
+import os from "node:os"
 import { parseGoalState } from "./parseGoalState.js"
 import { truncateText } from "./text.js"
 import type {
@@ -27,7 +28,17 @@ export function resolveModelLabel(requested: string, tier: ModelTier): ResolvedM
 }
 
 export function resolveStateDir(cwd: string, explicit?: string) {
-  return explicit ? path.resolve(explicit) : path.join(cwd, ".goal")
+  return explicit ? path.resolve(explicit) : defaultStateDir(cwd)
+}
+
+export function defaultStateDir(cwd: string) {
+  const resolved = path.resolve(cwd)
+  const slug = slugify(path.basename(resolved) || "workspace")
+  const hash = crypto.createHash("sha256").update(resolved).digest("hex").slice(0, 12)
+  const stateRoot = process.env.XDG_STATE_HOME
+    ? path.resolve(process.env.XDG_STATE_HOME)
+    : path.join(os.homedir(), ".local", "state")
+  return path.join(stateRoot, "cursor-goal", "workspaces", `${slug}-${hash}`)
 }
 
 export function currentStatePath(stateDir: string) {
@@ -130,13 +141,15 @@ export function updateGoalFromCommand(state: GoalState, command: ParsedCli, mode
     state.objective = command.objective
   }
   state.status = "active"
-  state.modelRequested = command.model
-  if (model) state.modelResolved = model
-  state.tier = command.tier
+  if (command.modelExplicit) {
+    state.modelRequested = command.model
+    if (model) state.modelResolved = model
+  }
+  if (command.tierExplicit) state.tier = command.tier
   if (command.verifyCommand) state.verification.command = command.verifyCommand
-  state.verification.timeoutMs = command.validationTimeoutMs
-  state.verification.allowDestructive = command.allowDestructive
-  state.budgets.maxTurns = command.maxTurns
+  if (command.validationTimeoutMsExplicit) state.verification.timeoutMs = command.validationTimeoutMs
+  if (command.allowDestructiveExplicit) state.verification.allowDestructive = command.allowDestructive
+  if (command.maxTurnsExplicit) state.budgets.maxTurns = command.maxTurns
   addHistory(state, command.action === "edit" ? "goal_edited" : "goal_resumed", { objective: command.objective })
 }
 

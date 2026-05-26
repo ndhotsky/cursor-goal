@@ -14,7 +14,32 @@ test("no args maps to status", () => {
 })
 
 test("resume is a control action", () => {
-  assert.equal(parseCli(["resume"], {}).action, "resume")
+  const parsed = parseCli(["resume"], {})
+  assert.equal(parsed.action, "resume")
+  assert.equal(parsed.maxTurnsExplicit, false)
+})
+
+test("explicit max turns is tracked", () => {
+  const parsed = parseCli(["resume", "--max-turns", "2"], {})
+  assert.equal(parsed.action, "resume")
+  assert.equal(parsed.maxTurns, 2)
+  assert.equal(parsed.maxTurnsExplicit, true)
+})
+
+test("env model is a default, not an explicit resume override", () => {
+  const parsed = parseCli(["resume"], { CURSOR_GOAL_MODEL: "custom-model" })
+  assert.equal(parsed.model, "custom-model")
+  assert.equal(parsed.modelExplicit, false)
+})
+
+test("workspace state scope keeps legacy .goal state location", () => {
+  const parsed = parseCli(["status", "--cwd", "/tmp/example"], { CURSOR_GOAL_STATE_SCOPE: "workspace" })
+  assert.equal(parsed.stateDir, "/tmp/example/.goal")
+})
+
+test("state dir env overrides default state location", () => {
+  const parsed = parseCli(["status"], { CURSOR_GOAL_STATE_DIR: "/tmp/cursor-goal-state" })
+  assert.equal(parsed.stateDir, "/tmp/cursor-goal-state")
 })
 
 test("set keyword maps to set action", () => {

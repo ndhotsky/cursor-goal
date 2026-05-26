@@ -1,6 +1,6 @@
 # cursor-goal
 
-A Codex-style `/goal` loop for **Cursor Agent chat**, with durable local state in `.goal/`.
+A Codex-style `/goal` loop for **Cursor Agent chat**, with durable local state outside the workspace by default.
 
 The agent loop runs in Cursor on your subscription — like Codex Goal mode. The CLI does not spawn a second agent via `@cursor/sdk`. It manages goal state, verification, and checkpoint accounting while **you** (or `/goal` in chat) do the work.
 
@@ -14,7 +14,7 @@ The agent loop runs in Cursor on your subscription — like Codex Goal mode. The
 - `/goal` / `cursor-goal` shows the current goal.
 - `/goal pause`, `/goal resume`, `/goal clear`, and `/goal edit` manage lifecycle.
 - Goal text is both the starting prompt and completion criteria.
-- Durable state in `.goal/current.json` and audit logs in `.goal/runs/*.md`.
+- Durable local state and audit logs without writing workspace `.goal/` by default.
 - Each checkpoint ends with `GOAL_STATUS` / `GOAL_REASON` and optional shell verification.
 - Continuation is suppressed when verification fails with no tool calls.
 
@@ -56,7 +56,7 @@ Full paths, uninstall, and troubleshooting: [`docs/install.md`](docs/install.md)
 
 The skill runs the loop in the **current chat**:
 
-1. Sets `.goal/current.json` via `cursor-goal` when needed.
+1. Sets durable local state via `cursor-goal` when needed.
 2. Makes checkpoint progress with normal Cursor tools.
 3. Ends each checkpoint with `GOAL_STATUS` / `GOAL_REASON`.
 4. Records evidence with `cursor-goal checkpoint` (verification + state update).
@@ -92,9 +92,11 @@ More examples: [`examples/goal-prompts.md`](examples/goal-prompts.md).
 
 ```text
 Cursor chat (/goal)  →  work + GOAL_STATUS lines
-                     →  cursor-goal checkpoint  →  verify shell cmd  →  .goal/current.json
+                     →  cursor-goal checkpoint  →  verify shell cmd  →  local state
                      →  continue in chat if still active
 ```
+
+By default, state is stored under the user state directory (`$XDG_STATE_HOME/cursor-goal/...` or `~/.local/state/cursor-goal/...`) so a workspace does not gain a `.goal/` directory. Use `--state-dir .goal` or `CURSOR_GOAL_STATE_SCOPE=workspace` for legacy workspace-local state.
 
 ## Verification
 
@@ -108,6 +110,9 @@ See [`docs/smoke-test.md`](docs/smoke-test.md). `npm test` is zero-token smoke f
 | [`docs/smoke-test.md`](docs/smoke-test.md) | Automated and manual verification |
 | [`docs/publishing.md`](docs/publishing.md) | Releases and npm CI |
 | [`docs/codex-goal-research.md`](docs/codex-goal-research.md) | Codex Goal-mode alignment notes |
+| [`docs/native-parity.md`](docs/native-parity.md) | Native Codex vs Cursor parity harness and contract |
+| [`docs/confidence-broadening-plan.md`](docs/confidence-broadening-plan.md) | Next-context plan for expanding parity confidence |
+| [`docs/release-0.3.0.md`](docs/release-0.3.0.md) | GitHub release notes and X launch copy |
 | [`CHANGELOG.md`](CHANGELOG.md) | Version history |
 
 ## Contributing

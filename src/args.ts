@@ -106,11 +106,22 @@ Options:
       --assistant-file <path>     Assistant text for checkpoint (must include GOAL_STATUS lines).
       --tool-calls <n>            Tool calls made during the checkpoint. Default: 0.
       --json                      Print machine-readable status.
-      --state-dir <path>          Default: <cwd>/.goal.
+      --state-dir <path>          Override state location. Use .goal for legacy workspace-local state.
 
 Environment:
   CURSOR_GOAL_MODEL               Optional default model id recorded in goal state.
+  CURSOR_GOAL_STATE_DIR           Optional default state directory.
+  CURSOR_GOAL_STATE_SCOPE         Set to workspace for legacy <cwd>/.goal state.
 `
+}
+
+function resolveStateDirOption(parsed: ReturnType<typeof parseArgs>, env: NodeJS.ProcessEnv) {
+  if (parsed.values["state-dir"]) return path.resolve(String(parsed.values["state-dir"]))
+  if (env.CURSOR_GOAL_STATE_DIR) return path.resolve(env.CURSOR_GOAL_STATE_DIR)
+  if (env.CURSOR_GOAL_STATE_SCOPE === "workspace" || env.CURSOR_GOAL_LEGACY_WORKSPACE_STATE === "1") {
+    return path.join(path.resolve(String(parsed.values.cwd ?? process.cwd())), ".goal")
+  }
+  return undefined
 }
 
 function baseCommand(action: GoalAction, parsed: ReturnType<typeof parseArgs>, env: NodeJS.ProcessEnv): ParsedCli {
@@ -122,13 +133,18 @@ function baseCommand(action: GoalAction, parsed: ReturnType<typeof parseArgs>, e
   return {
     action,
     model: String(parsed.values.model ?? env.CURSOR_GOAL_MODEL ?? DEFAULT_MODEL),
+    modelExplicit: parsed.values.model !== undefined,
     tier: parseTier(String(parsed.values.tier ?? "auto")),
+    tierExplicit: parsed.values.tier !== undefined,
     cwd: path.resolve(String(parsed.values.cwd ?? process.cwd())),
-    stateDir: parsed.values["state-dir"] ? path.resolve(String(parsed.values["state-dir"])) : undefined,
+    stateDir: resolveStateDirOption(parsed, env),
     verifyCommand: verifyValues.length > 0 ? verifyValues.join(" && ") : undefined,
     maxTurns: parsePositiveInt(parsed.values["max-turns"], DEFAULT_MAX_TURNS, "--max-turns"),
+    maxTurnsExplicit: parsed.values["max-turns"] !== undefined,
     validationTimeoutMs: parsePositiveInt(parsed.values["validation-timeout-ms"], DEFAULT_VALIDATION_TIMEOUT_MS, "--validation-timeout-ms"),
+    validationTimeoutMsExplicit: parsed.values["validation-timeout-ms"] !== undefined,
     allowDestructive: Boolean(parsed.values["allow-destructive"]),
+    allowDestructiveExplicit: parsed.values["allow-destructive"] !== undefined,
     once: Boolean(parsed.values.once),
     json: Boolean(parsed.values.json),
     assistantFile: parsed.values["assistant-file"] ? path.resolve(String(parsed.values["assistant-file"])) : undefined,

@@ -28,4 +28,4 @@ cursor-goal ...
 
 ## Logs
 
-Paste relevant `.goal/runs/*.md` excerpts. Remove secrets.
+Paste relevant `cursor-goal --json` output or run log excerpts. Remove secrets.

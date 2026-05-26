@@ -4,7 +4,7 @@ import path from "node:path"
 import test from "node:test"
 import assert from "node:assert/strict"
 import { parseGoalState } from "../src/parseGoalState.js"
-import { createGoalState, loadGoalState, saveGoalState, updateGoalFromCommand } from "../src/state.js"
+import { createGoalState, loadGoalState, resolveStateDir, saveGoalState, updateGoalFromCommand } from "../src/state.js"
 import { sampleGoalState, sampleParsedCli } from "./helpers/goalFixtures.js"
 
 test("parseGoalState rejects unknown schema version", () => {
@@ -63,9 +63,36 @@ test("once does not change maxTurns when creating goal state", () => {
   assert.equal(state.budgets.maxTurns, 8)
 })
 
+test("default state dir is outside workspace for native parity", () => {
+  const workspace = path.join(os.tmpdir(), "cursor-goal-default-state")
+  const stateDir = resolveStateDir(workspace)
+  assert.ok(!stateDir.startsWith(path.join(workspace, ".goal")))
+  assert.match(stateDir, /cursor-goal/)
+})
+
 test("once does not change maxTurns when resuming goal state", () => {
   const state = sampleGoalState({ usage: { turnsUsed: 3 }, budgets: { maxTurns: 8 } })
   updateGoalFromCommand(state, sampleParsedCli({ action: "resume", once: true, maxTurns: 8 }))
   assert.equal(state.budgets.maxTurns, 8)
   assert.equal(state.usage.turnsUsed, 3)
+})
+
+test("resume preserves existing goal settings unless flags are explicit", () => {
+  const state = sampleGoalState({
+    status: "paused",
+    budgets: { maxTurns: 2 },
+    verification: { command: "npm test", timeoutMs: 1234, allowDestructive: true },
+    modelRequested: "custom-model",
+    tier: "standard",
+  })
+
+  updateGoalFromCommand(state, sampleParsedCli({ action: "resume", verifyCommand: undefined }))
+
+  assert.equal(state.status, "active")
+  assert.equal(state.budgets.maxTurns, 2)
+  assert.equal(state.verification.command, "npm test")
+  assert.equal(state.verification.timeoutMs, 1234)
+  assert.equal(state.verification.allowDestructive, true)
+  assert.equal(state.modelRequested, "custom-model")
+  assert.equal(state.tier, "standard")
 })

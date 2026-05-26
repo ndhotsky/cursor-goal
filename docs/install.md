@@ -2,7 +2,7 @@
 
 `cursor-goal` has two parts:
 
-1. **CLI** (`cursor-goal` / `cgoal`) — `.goal/` state, verification, checkpoints
+1. **CLI** (`cursor-goal` / `cgoal`) — local state, verification, checkpoints
 2. **Cursor skill** — enables `/goal` in Agent chat
 
 Both are required for the full experience.
@@ -72,9 +72,22 @@ Optional env (see `.env.example`):
 
 ```bash
 export CURSOR_GOAL_MODEL=composer-2.5
+export CURSOR_GOAL_STATE_DIR=/path/to/state
 ```
 
-Recorded in goal state for audit only; the model you select in Cursor chat is what runs.
+`CURSOR_GOAL_MODEL` is recorded in newly created goal state for audit only; the model you select in Cursor chat is what runs.
+
+State is stored outside the workspace by default for native Codex parity:
+
+```text
+$XDG_STATE_HOME/cursor-goal/workspaces/<workspace-hash>/
+```
+
+If `XDG_STATE_HOME` is unset, `~/.local/state` is used. For legacy workspace-local state, run commands with `--state-dir .goal` or set:
+
+```bash
+export CURSOR_GOAL_STATE_SCOPE=workspace
+```
 
 ## Uninstall
 
@@ -105,5 +118,5 @@ Remove per-project skills with `rm -rf .cursor/skills/goal` if you installed loc
 
 **Skill works but checkpoints fail**
 
-- Run `cursor-goal` from the project root (where `.goal/` should live)
+- Run `cursor-goal` from the project root so it resolves the same workspace state
 - Pass `--verify` with a safe, repo-specific command when setting the goal

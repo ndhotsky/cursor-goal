@@ -111,12 +111,17 @@ export type ParsedCli = {
   objective?: string
   verifyCommand?: string
   model: string
+  modelExplicit: boolean
   tier: ModelTier
+  tierExplicit: boolean
   cwd: string
   stateDir?: string
   maxTurns: number
+  maxTurnsExplicit: boolean
   validationTimeoutMs: number
+  validationTimeoutMsExplicit: boolean
   allowDestructive: boolean
+  allowDestructiveExplicit: boolean
   once: boolean
   json: boolean
   assistantFile?: string

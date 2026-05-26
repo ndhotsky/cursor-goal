@@ -1,7 +1,7 @@
 {
   "name": "cursor-goal",
-  "version": "0.2.3",
-  "description": "Codex-style /goal loops for Cursor Agent chat with local .goal state — no Agent SDK required.",
+  "version": "0.3.0",
+  "description": "Codex-style /goal loops for Cursor Agent chat with durable local state — no Agent SDK required.",
   "type": "module",
   "license": "MIT",
   "author": "Niko",
@@ -48,6 +48,7 @@
     "build": "tsc -p tsconfig.json",
     "test": "tsx --test test/*.test.ts && bash test/install-skill.test.sh",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "parity": "tsx scripts/parity-harness.ts",
     "install-skill": "bash scripts/install-skill.sh",
     "install-skill:global": "bash scripts/install-skill.sh --global",
     "prepack": "npm run build"

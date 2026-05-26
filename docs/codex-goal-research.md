@@ -35,12 +35,14 @@ This project’s continuation prompt mirrors that structure. The CLI keeps `--ve
 
 Codex’s public docs describe Goals as durable thread-scoped state. The state includes objective, lifecycle, budget, and progress accounting. A Goal can be active, paused, complete, or budget-limited. The model is expected to complete only after checking concrete evidence.
 
-This project copies those ideas as local workspace state:
+This project copies those ideas as local state outside the workspace by default:
 
 ```text
-.goal/current.json
-.goal/runs/<timestamp>-<slug>.md
+$XDG_STATE_HOME/cursor-goal/workspaces/<workspace-hash>/current.json
+$XDG_STATE_HOME/cursor-goal/workspaces/<workspace-hash>/runs/<timestamp>-<slug>.md
 ```
+
+Legacy workspace-local state remains available with `--state-dir .goal` or `CURSOR_GOAL_STATE_SCOPE=workspace`.
 
 The lifecycle statuses are:
 
@@ -60,7 +62,7 @@ Codex continuation is conservative: it happens at safe boundaries when the threa
 
 - one bounded checkpoint per agent turn in chat;
 - shell verification after each checkpoint (when configured);
-- state persistence in `.goal/current.json` after each checkpoint;
+- state persistence after each checkpoint;
 - max-turn budget in goal state;
 - continuation suppression if validation fails and the checkpoint recorded zero tool calls.
 
@@ -81,7 +83,7 @@ The CLI, not the model, decides whether to accept completion. If a verification 
 
 The agent loop runs in the user’s Cursor chat session (Composer model selected in the IDE). `cursor-goal` is a small CLI that:
 
-- writes and reads `.goal/current.json`;
+- writes and reads local state outside the workspace by default;
 - runs configured verification commands;
 - records checkpoints from assistant text (`GOAL_STATUS` / `GOAL_REASON`).
 
