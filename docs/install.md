@@ -1,17 +1,19 @@
 # Install
 
-`cursor-goal` has two parts:
+`cursor-goal` has three parts:
 
 1. **CLI** (`cursor-goal` / `cgoal`) — local state, verification, checkpoints
 2. **Cursor skill** — enables `/goal` in Agent chat
+3. **Stop hook** (optional, recommended for hard enforcement) — blocks agent stop until verification passes
 
-Both are required for the full experience.
+Parts 1 and 2 are required for the basic experience. Part 3 adds harness-level enforcement in **local Cursor Agent chat** (stop hooks are not wired in Cloud Agents today).
 
 ## Quick start (npm, recommended)
 
 ```bash
 npm install -g cursor-goal
 cursor-goal-install-skill --global
+cursor-goal-install-hook --global
 ```
 
 Confirm:
@@ -19,6 +21,7 @@ Confirm:
 ```bash
 cursor-goal --version
 ls ~/.cursor/skills/goal/SKILL.md
+node -e 'console.log(JSON.parse(require("fs").readFileSync(process.env.HOME+"/.cursor/hooks.json","utf8")).hooks.stop[0].command)'
 ```
 
 In any project workspace, open Cursor Agent chat and run:
@@ -36,6 +39,7 @@ npm install
 npm run build
 npm link
 npm run install-skill:global
+npm run install-hook:global
 ```
 
 Project-local skill only (this repo):
@@ -43,6 +47,28 @@ Project-local skill only (this repo):
 ```bash
 npm run install-skill
 ```
+
+## Hook install options
+
+| Method | Command | Installs to |
+|--------|---------|-------------|
+| Global (all workspaces) | `cursor-goal-install-hook --global` | `~/.cursor/hooks.json` |
+| Project | `cursor-goal-install-hook` | `./.cursor/hooks.json` |
+| From clone | `npm run install-hook:global` | same as global |
+
+The installer merges into an existing `hooks.json` when present: it prepends the cursor-goal `stop` entry (with `loop_limit: null`) and removes prior `evaluate-goal` entries. Other hooks are preserved.
+
+**Local IDE only:** Cursor `stop` hooks run in local Agent chat, not in Cloud Agent VMs. Cloud sessions still get skill + CLI behavior, but without the hard stop gate.
+
+Link goals to chats when setting or resuming:
+
+```bash
+cursor-goal "Fix auth tests" --verify "npm test" \
+  --conversation-id "<cursor-chat-id>" \
+  --workspace-root "$PWD"
+```
+
+When `--conversation-id` is omitted, the stop hook no-ops (`{}`) because it cannot find linked state.
 
 ## Skill install options
 
@@ -95,7 +121,9 @@ npm uninstall -g cursor-goal
 rm -rf ~/.cursor/skills/goal
 ```
 
-Remove per-project skills with `rm -rf .cursor/skills/goal` if you installed locally.
+Remove the stop hook entry from `~/.cursor/hooks.json`, or delete the file if cursor-goal was the only consumer.
+
+Remove per-project skill/hook files with `rm -rf .cursor/skills/goal` and edit `.cursor/hooks.json` if you installed locally.
 
 ## Troubleshooting
 
@@ -119,3 +147,12 @@ Remove per-project skills with `rm -rf .cursor/skills/goal` if you installed loc
 
 - Run `cursor-goal` from the project root so it resolves the same workspace state
 - Pass `--verify` with a safe, repo-specific command when setting the goal
+
+**Stop hook keeps looping or never completes**
+
+- Confirm the goal was set with `--conversation-id` matching the active chat
+- Run verification manually: `cursor-goal` should show the configured command
+- Check `~/.cursor/hooks.json` points at `evaluate-goal.sh` from your installed package
+- Remember: stop hooks do not run in Cloud Agents — test in local Agent chat
+
+For a full manual stop-hook acceptance script, see [Smoke verification](smoke-test.md#stop-hook-manual-test-local-ide).

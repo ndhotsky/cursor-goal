@@ -6,13 +6,15 @@ disable-model-invocation: true
 
 # Goal Skill
 
-Install: `cursor-goal-install-skill --global` after `npm install -g cursor-goal` (see repo `docs/install.md`).
+Install: `cursor-goal-install-skill --global` and `cursor-goal-install-hook --global` after `npm install -g cursor-goal` (see repo `docs/install.md`).
 
 Use this skill when the user invokes `/goal` or asks for a Codex-style persistent goal loop.
 
 **Run the loop in this Cursor chat session.** You are the agent. Do not start a separate agent process or move the loop outside this chat.
 
 Use the local `cursor-goal` CLI only for durable state, verification, and checkpoint accounting.
+
+When the global stop hook is installed (`cursor-goal-install-hook --global`), **you are not done until the hook allows stop**. Turn-end verification is authoritative; do not declare completion yourself. Checkpoints below are still useful for audit, but the stop hook is the hard gate.
 
 ## Command mapping
 
@@ -26,14 +28,20 @@ Use the local `cursor-goal` CLI only for durable state, verification, and checkp
 When setting a goal from the CLI surface:
 
 ```bash
-cursor-goal "<objective>" --verify "npm test"
+cursor-goal "<objective>" --verify "npm test" \
+  --conversation-id "<chat-id-if-known>" \
+  --workspace-root "<project-root>"
 ```
+
+Pass `--conversation-id` when you know the Cursor chat id (for example `CURSOR_CONVERSATION_ID` when present in the environment). This links goal state to the chat so the stop hook can enforce completion. Pass `--workspace-root` when the project root differs from the shell cwd.
 
 If the objective names verification ("verify with …", "verified by …"), pass `--verify`. Otherwise infer a safe command from the repo when obvious (`npm test`, `pnpm test`, `pytest`, etc.).
 
 ## Checkpoint loop (each turn)
 
-1. Load active goal with `cursor-goal`. If missing on `/goal <objective>`, set it with `cursor-goal`.
+When a stop hook is installed, treat checkpoints as **audit progress**, not the primary stop gate. Still record them when you make meaningful progress.
+
+1. Load active goal with `cursor-goal`. If missing on `/goal <objective>`, set it with `cursor-goal` (include `--conversation-id` / `--workspace-root` when available).
 2. If status is not `active`, report status and stop unless the user asked to resume.
 3. Optionally run `cursor-goal prompt` when you need the formatted continuation contract.
 4. Make **one bounded checkpoint** of concrete progress with normal Cursor tools.
@@ -71,7 +79,7 @@ For the full continuation contract (same text `cursor-goal prompt` prints), run 
 - Treat the goal text as both the starting prompt and the completion criteria.
 - Prefer small, auditable changes over sweeping rewrites.
 - Use repository evidence: files, diffs, tests, command output, artifacts.
-- Do not declare complete unless verification passed or you justify why it no longer applies.
+- Do not declare complete unless verification passed or you justify why it no longer applies. With the stop hook installed, the hook decides completion at turn end even if you emit `GOAL_STATUS: COMPLETE`.
 - If blocked by missing credentials, destructive ambiguity, or unavailable verification, use `GOAL_STATUS: BLOCKED`.
 - Do not pause, resume, clear, or edit unless the user asked for that lifecycle action.
 - Default to at most 8 checkpoints unless the user set a different budget in state.

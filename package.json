@@ -28,7 +28,8 @@
   "bin": {
     "cursor-goal": "./dist/index.js",
     "cgoal": "./dist/index.js",
-    "cursor-goal-install-skill": "./scripts/install-skill.sh"
+    "cursor-goal-install-skill": "./scripts/install-skill.sh",
+    "cursor-goal-install-hook": "./scripts/install-hook.sh"
   },
   "exports": {
     ".": "./dist/index.js"
@@ -41,17 +42,20 @@
     ".cursor/skills/goal/SKILL.md",
     "scripts/install-skill.sh",
     "scripts/evaluate-goal.sh",
+    "scripts/install-hook.sh",
     "docs",
     "examples"
   ],
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc -p tsconfig.json",
-    "test": "tsx --test test/*.test.ts && bash test/install-skill.test.sh",
+    "test": "tsx --test test/*.test.ts && bash test/install-skill.test.sh && bash test/install-hook.test.sh",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "parity": "tsx scripts/parity-harness.ts",
     "install-skill": "bash scripts/install-skill.sh",
     "install-skill:global": "bash scripts/install-skill.sh --global",
+    "install-hook": "bash scripts/install-hook.sh",
+    "install-hook:global": "bash scripts/install-hook.sh --global",
     "prepack": "npm run build"
   },
   "devDependencies": {

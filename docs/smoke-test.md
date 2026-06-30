@@ -49,3 +49,20 @@ cursor-goal --json
 ```
 
 Uses your Cursor subscription.
+
+## Stop hook manual test (local IDE)
+
+Requires global skill + hook (`cursor-goal-install-skill --global`, `cursor-goal-install-hook --global`) and **local** Agent chat (not Cloud Agents).
+
+1. In a repo with a failing test, set a linked goal from the project root (use your chat id if known):
+
+```bash
+cursor-goal "Fix the failing test" --verify "npm test" \
+  --conversation-id "<your-chat-id>" \
+  --workspace-root "$PWD"
+```
+
+2. In Agent chat: `/goal Fix the failing test; verify with npm test`
+3. Let the agent try to stop while tests still fail — the hook should auto-continue with a `followup_message`.
+4. After the fix lands and `npm test` passes, the next turn end should allow stop and `cursor-goal` should show `complete`.
+5. In a normal chat with no active goal, turn end should not loop (hook returns `{}`).
