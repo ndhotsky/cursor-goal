@@ -79,6 +79,13 @@ export type GoalHistoryEvent = {
   details?: Record<string, unknown>
 }
 
+export type ConversationIndexEntry = {
+  conversation_id: string
+  state_dir: string
+  workspace_root: string
+  linked_at: string
+}
+
 export type GoalState = {
   schemaVersion: 1
   goalId: string
@@ -126,6 +133,8 @@ export type ParsedCli = {
   json: boolean
   assistantFile?: string
   toolCalls?: number
+  conversationId?: string
+  workspaceRoot?: string
 }
 
 export type CheckpointOutcome = {

@@ -51,3 +51,17 @@ test("set keyword maps to set action", () => {
 test("rejects invalid tier", () => {
   assert.throws(() => parseCli(["Fix", "--tier", "warp-speed"], {}), /Invalid --tier/)
 })
+
+test("conversation id flags parse on set and resume", () => {
+  const parsed = parseCli(
+    ["Fix auth tests", "--conversation-id", "conv-123", "--workspace-root", "/tmp/repo"],
+    {}
+  )
+  assert.equal(parsed.action, "set")
+  assert.equal(parsed.conversationId, "conv-123")
+  assert.equal(parsed.workspaceRoot, "/tmp/repo")
+})
+
+test("rejects empty conversation id", () => {
+  assert.throws(() => parseCli(["resume", "--conversation-id", "   "], {}), /--conversation-id/)
+})

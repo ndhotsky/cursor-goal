@@ -46,6 +46,8 @@ export function parseCli(argv: string[], env = process.env): ParsedCli {
       json: { type: "boolean" },
       "assistant-file": { type: "string" },
       "tool-calls": { type: "string" },
+      "conversation-id": { type: "string" },
+      "workspace-root": { type: "string" },
       help: { type: "boolean", short: "h" },
       version: { type: "boolean" },
     },
@@ -105,6 +107,8 @@ Options:
       --once                      After a checkpoint, pause if still active (does not change turn budget).
       --assistant-file <path>     Assistant text for checkpoint (must include GOAL_STATUS lines).
       --tool-calls <n>            Tool calls made during the checkpoint. Default: 0.
+      --conversation-id <id>      Link this goal to a Cursor chat (set/resume; used by stop hook).
+      --workspace-root <path>     Workspace root for chat-linked goals. Default: --cwd.
       --json                      Print machine-readable status.
       --state-dir <path>          Override state location. Use .goal for legacy workspace-local state.
 
@@ -149,6 +153,10 @@ function baseCommand(action: GoalAction, parsed: ReturnType<typeof parseArgs>, e
     json: Boolean(parsed.values.json),
     assistantFile: parsed.values["assistant-file"] ? path.resolve(String(parsed.values["assistant-file"])) : undefined,
     toolCalls: parseOptionalNonNegativeInt(parsed.values["tool-calls"], "--tool-calls"),
+    conversationId: parseOptionalNonEmptyString(parsed.values["conversation-id"], "--conversation-id"),
+    workspaceRoot: parsed.values["workspace-root"]
+      ? path.resolve(String(parsed.values["workspace-root"]))
+      : undefined,
   }
 }
 
@@ -191,4 +199,13 @@ function parseOptionalNonNegativeInt(value: unknown, flag: string) {
     throw new Error(`${flag} must be a non-negative integer.`)
   }
   return n
+}
+
+function parseOptionalNonEmptyString(value: unknown, flag: string) {
+  if (value === undefined) return undefined
+  const text = String(value).trim()
+  if (!text) {
+    throw new Error(`${flag} must be a non-empty string.`)
+  }
+  return text
 }

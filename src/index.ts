@@ -3,6 +3,11 @@ import fs from "node:fs/promises"
 import { parseCli, usage } from "./args.js"
 import { continuationPromptForState, recordCheckpoint } from "./checkpoint.js"
 import {
+  clearConversationIndex,
+  clearConversationIndexForStateDir,
+  linkConversationGoal,
+} from "./conversationIndex.js"
+import {
   addHistory,
   appendRunLog,
   clearGoalState,
@@ -46,11 +51,12 @@ const actionHandlers: Record<GoalAction, (ctx: HandlerContext) => Promise<void>>
     printStatus(await loadGoalState(stateDir), command.json)
   },
 
-  clear: async ({ stateDir }) => {
+  clear: async ({ command, stateDir }) => {
     const existing = await loadGoalState(stateDir)
     if (existing) {
       await appendRunLog(existing, `## Cleared\n\nCleared: ${new Date().toISOString()}`)
     }
+    await unlinkConversationIndex(command, stateDir)
     const removed = await clearGoalState(stateDir)
     console.log(removed ? "Goal cleared." : "No goal to clear.")
   },
@@ -80,6 +86,9 @@ const actionHandlers: Record<GoalAction, (ctx: HandlerContext) => Promise<void>>
       assistantText,
       toolCallCount: command.toolCalls,
     })
+    if (state.status === "complete") {
+      await unlinkConversationIndex(command, stateDir)
+    }
     printStatus(state, command.json)
     if (state.status === "active") {
       console.log(CONTINUE_HINT)
@@ -96,6 +105,7 @@ const actionHandlers: Record<GoalAction, (ctx: HandlerContext) => Promise<void>>
     await writeInitialRunLog(state)
     if (dirty) await appendRunLog(state, `## Initial working tree was not clean\n\n\`\`\`\n${dirty}\n\`\`\``)
     await saveGoalState(stateDir, state)
+    await syncConversationIndex(command, stateDir)
     console.log(`Goal set: ${state.objective}`)
     console.log(CONTINUE_HINT)
     printStatus(state, command.json)
@@ -122,6 +132,9 @@ async function editOrResume(options: { command: ParsedCli; stateDir: string; lab
     `## ${label}\n\nAt: ${new Date().toISOString()}${command.objective ? `\n\nNew objective:\n${command.objective}` : ""}`
   )
   await saveGoalState(stateDir, state)
+  if (label === "Resumed") {
+    await syncConversationIndex(command, stateDir)
+  }
   console.log(label === "Edited" ? "Goal edited." : "Goal resumed.")
   console.log(CONTINUE_HINT)
   printStatus(state, command.json)
@@ -155,6 +168,23 @@ function printStatus(state: Awaited<ReturnType<typeof loadGoalState>>, asJson: b
   } else {
     console.log(formatGoalStatus(state))
   }
+}
+
+async function syncConversationIndex(command: ParsedCli, stateDir: string) {
+  if (!command.conversationId) return
+
+  await linkConversationGoal({
+    conversationId: command.conversationId,
+    stateDir,
+    workspaceRoot: command.workspaceRoot ?? command.cwd,
+  })
+}
+
+async function unlinkConversationIndex(command: ParsedCli, stateDir: string) {
+  if (command.conversationId) {
+    await clearConversationIndex(command.conversationId)
+  }
+  await clearConversationIndexForStateDir(stateDir)
 }
 
 main(process.argv.slice(2)).catch((error) => {
