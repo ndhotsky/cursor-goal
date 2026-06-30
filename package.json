@@ -5,13 +5,13 @@
   "type": "module",
   "license": "MIT",
   "author": "Niko",
-  "homepage": "https://github.com/Niko96-dotcom/cursor-goal#readme",
+  "homepage": "https://github.com/ndhotsky/cursor-goal#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Niko96-dotcom/cursor-goal.git"
+    "url": "git+https://github.com/ndhotsky/cursor-goal.git"
   },
   "bugs": {
-    "url": "https://github.com/Niko96-dotcom/cursor-goal/issues"
+    "url": "https://github.com/ndhotsky/cursor-goal/issues"
   },
   "keywords": [
     "cursor",

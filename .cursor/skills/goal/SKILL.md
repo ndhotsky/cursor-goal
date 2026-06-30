@@ -6,7 +6,14 @@ disable-model-invocation: true
 
 # Goal Skill
 
-Install: `cursor-goal-install-skill --global` and `cursor-goal-install-hook --global` after `npm install -g cursor-goal` (see repo `docs/install.md`).
+Install from source (see repo `docs/install.md`):
+
+```bash
+git clone https://github.com/ndhotsky/cursor-goal.git
+cd cursor-goal && npm install && npm run build && npm link
+cursor-goal-install-skill --global
+cursor-goal-install-hook --global
+```
 
 Use this skill when the user invokes `/goal` or asks for a Codex-style persistent goal loop.
 

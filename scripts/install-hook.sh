@@ -47,7 +47,7 @@ find_evaluate_goal_script() {
   fi
 
   echo "error: could not find evaluate-goal.sh (expected under package scripts/)" >&2
-  echo "hint: run npm run build && npm link, or npm install -g cursor-goal" >&2
+  echo "hint: run npm run build && npm link from your cursor-goal clone" >&2
   return 1
 }
 
@@ -67,8 +67,10 @@ Notes:
   - Stop hooks run in local Cursor Agent chat only (not Cloud Agents).
   - Link goals with --conversation-id when setting/resuming so the hook can find state.
 
-After a global npm install:
-  npm install -g cursor-goal
+After cloning and linking:
+
+  git clone https://github.com/ndhotsky/cursor-goal.git
+  cd cursor-goal && npm install && npm run build && npm link
   cursor-goal-install-skill --global
   cursor-goal-install-hook --global
 EOF

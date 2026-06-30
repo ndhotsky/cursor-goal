@@ -4,36 +4,16 @@
 
 1. **CLI** (`cursor-goal` / `cgoal`) — local state, verification, checkpoints
 2. **Cursor skill** — enables `/goal` in Agent chat
-3. **Stop hook** (optional, recommended for hard enforcement) — blocks agent stop until verification passes
+3. **Stop hook** (recommended for hard enforcement) — blocks agent stop until verification passes
 
 Parts 1 and 2 are required for the basic experience. Part 3 adds harness-level enforcement in **local Cursor Agent chat** (stop hooks are not wired in Cloud Agents today).
 
-## Quick start (npm, recommended)
+## Quick start
+
+Clone this repo, build, link the CLI, and install the skill + stop hook globally:
 
 ```bash
-npm install -g cursor-goal
-cursor-goal-install-skill --global
-cursor-goal-install-hook --global
-```
-
-Confirm:
-
-```bash
-cursor-goal --version
-ls ~/.cursor/skills/goal/SKILL.md
-node -e 'console.log(JSON.parse(require("fs").readFileSync(process.env.HOME+"/.cursor/hooks.json","utf8")).hooks.stop[0].command)'
-```
-
-In any project workspace, open Cursor Agent chat and run:
-
-```text
-/goal <your objective>
-```
-
-## From source (contributors)
-
-```bash
-git clone https://github.com/Niko96-dotcom/cursor-goal.git
+git clone https://github.com/ndhotsky/cursor-goal.git
 cd cursor-goal
 npm install
 npm run build
@@ -42,11 +22,30 @@ npm run install-skill:global
 npm run install-hook:global
 ```
 
-Project-local skill only (this repo):
+Confirm:
+
+```bash
+cursor-goal --version
+test -f ~/.cursor/skills/goal/SKILL.md
+test -f ~/.cursor/hooks.json
+```
+
+In any project workspace, open **local** Cursor Agent chat and run:
+
+```text
+/goal <your objective>
+```
+
+## Project-local install
+
+Skill and hook under the current directory instead of `~/.cursor/`:
 
 ```bash
 npm run install-skill
+npm run install-hook
 ```
+
+Run `npm link` from the clone first so `cursor-goal` and the install scripts are on PATH.
 
 ## Hook install options
 
@@ -77,15 +76,14 @@ When `--conversation-id` is omitted, the stop hook no-ops (`{}`) because it cann
 | Global (all workspaces) | `cursor-goal-install-skill --global` | `~/.cursor/skills/goal/` |
 | Project | `cursor-goal-install-skill` | `./.cursor/skills/goal/` |
 | From clone | `npm run install-skill:global` | same as global |
-| Manual copy | see below | your choice |
 
-Manual copy after a global npm install:
+Manual copy from a clone:
 
 ```bash
-PKG="$(npm root -g)/cursor-goal"
+git clone https://github.com/ndhotsky/cursor-goal.git
 mkdir -p ~/.cursor/skills
 rm -rf ~/.cursor/skills/goal
-cp -R "$PKG/.cursor/skills/goal" ~/.cursor/skills/goal
+cp -R cursor-goal/.cursor/skills/goal ~/.cursor/skills/goal
 ```
 
 ## Requirements
@@ -102,13 +100,14 @@ export CURSOR_GOAL_STATE_DIR=/path/to/state
 
 `CURSOR_GOAL_MODEL` is recorded in newly created goal state for audit only; the model you select in Cursor chat is what runs.
 
-State is stored outside the workspace by default for native Codex parity:
+State is stored outside the workspace by default:
 
 ```text
-$XDG_STATE_HOME/cursor-goal/workspaces/<workspace-hash>/
+~/.local/state/cursor-goal/workspaces/<workspace-hash>/
+~/.local/state/cursor-goal/conversations/     # stop hook chat index
 ```
 
-If `XDG_STATE_HOME` is unset, `~/.local/state` is used. For legacy workspace-local state, run commands with `--state-dir .goal` or set:
+If `XDG_STATE_HOME` is set, that path is used instead of `~/.local/state`. For legacy workspace-local state, run commands with `--state-dir .goal` or set:
 
 ```bash
 export CURSOR_GOAL_STATE_SCOPE=workspace
@@ -117,7 +116,7 @@ export CURSOR_GOAL_STATE_SCOPE=workspace
 ## Uninstall
 
 ```bash
-npm uninstall -g cursor-goal
+npm unlink -g cursor-goal    # if you used npm link
 rm -rf ~/.cursor/skills/goal
 ```
 
@@ -129,19 +128,19 @@ Remove per-project skill/hook files with `rm -rf .cursor/skills/goal` and edit `
 
 **`/goal` does nothing or is unknown**
 
-- Install the skill: `cursor-goal-install-skill --global`
+- Install the skill: `npm run install-skill:global` from your clone (or `cursor-goal-install-skill --global` after `npm link`)
 - Restart Cursor or open a new Agent chat
 - Confirm `~/.cursor/skills/goal/SKILL.md` exists
 
 **`cursor-goal: command not found`**
 
-- Reinstall: `npm install -g cursor-goal`
-- Check PATH includes your global npm bin directory (`npm bin -g`)
+- From the clone: `npm run build && npm link`
+- Confirm `which cursor-goal` resolves to your linked binary
 
-**`cursor-goal-install-skill: cd: .../.cursor/skills/goal: No such file`**
+**`cursor-goal-install-skill` or `cursor-goal-install-hook` cannot find package files**
 
-- You likely have `0.2.2` or older; upgrade: `npm install -g cursor-goal@latest`
-- Then run `cursor-goal-install-skill --global` again
+- Run from a built clone (`npm run build`)
+- Re-link: `npm link` from the repo root
 
 **Skill works but checkpoints fail**
 
@@ -152,7 +151,7 @@ Remove per-project skill/hook files with `rm -rf .cursor/skills/goal` and edit `
 
 - Confirm the goal was set with `--conversation-id` matching the active chat
 - Run verification manually: `cursor-goal` should show the configured command
-- Check `~/.cursor/hooks.json` points at `evaluate-goal.sh` from your installed package
+- Check `~/.cursor/hooks.json` points at `evaluate-goal.sh` from your clone (via `npm link` path)
 - Remember: stop hooks do not run in Cloud Agents — test in local Agent chat
 
 For a full manual stop-hook acceptance script, see [Smoke verification](smoke-test.md#stop-hook-manual-test-local-ide).

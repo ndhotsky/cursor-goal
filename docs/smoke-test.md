@@ -4,13 +4,15 @@ Zero-token proof that the `cursor-goal` CLI lifecycle and checkpoint behavior wo
 
 ## Prerequisites
 
-CLI on PATH from either:
+CLI on PATH from a source checkout:
 
 ```bash
-npm install -g cursor-goal
+git clone https://github.com/ndhotsky/cursor-goal.git
+cd cursor-goal
+npm install
+npm run build
+npm link
 ```
-
-or a source checkout with `npm link` after `npm run build`.
 
 Skill install is **not** required for `npm test` (CLI-only). For manual `/goal` in Cursor, install the skill first — see [`install.md`](install.md).
 
@@ -26,6 +28,8 @@ npm test
 | `test/smoke.test.ts` | `recordCheckpoint()` with real shell verification |
 | `test/smoke.test.ts` | `cursor-goal checkpoint` via stdin |
 | `test/loopPolicy.test.ts` | Completion vs validation vs spin-loop blocking |
+| `test/stopEvaluate.test.ts` | Stop hook evaluator paths |
+| `test/install-hook.test.sh` | Hook installer merge behavior |
 | parser/args/validation tests | Codex-style parsing and safety |
 
 ## CLI live smoke (no Cursor UI)
@@ -34,7 +38,7 @@ Automated E2E in a temp directory: set goal → create artifact → `checkpoint`
 
 ## Manual `/goal` proof in Cursor
 
-1. Install skill: `cursor-goal-install-skill --global` (or `npm run install-skill:global` from clone).
+1. From your clone: `npm run install-skill:global` (and `npm run install-hook:global` for hard enforcement).
 2. In Agent chat:
 
 ```text
@@ -52,7 +56,7 @@ Uses your Cursor subscription.
 
 ## Stop hook manual test (local IDE)
 
-Requires global skill + hook (`cursor-goal-install-skill --global`, `cursor-goal-install-hook --global`) and **local** Agent chat (not Cloud Agents).
+Requires global skill + hook (`npm run install-skill:global`, `npm run install-hook:global`) and **local** Agent chat (not Cloud Agents).
 
 1. In a repo with a failing test, set a linked goal from the project root (use your chat id if known):
 

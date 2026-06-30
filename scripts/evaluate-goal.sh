@@ -44,7 +44,7 @@ find_cli_entry() {
   fi
 
   echo "error: could not find cursor-goal CLI entry (expected dist/index.js)" >&2
-  echo "hint: run npm run build or npm install -g cursor-goal" >&2
+  echo "hint: run npm run build && npm link from your cursor-goal clone" >&2
   return 1
 }
 
