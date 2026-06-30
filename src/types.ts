@@ -21,6 +21,7 @@ export type GoalAction =
   | "edit"
   | "checkpoint"
   | "prompt"
+  | "stop-evaluate"
   | "help"
   | "version"
 

@@ -21,6 +21,11 @@ import {
   updateGoalFromCommand,
   writeInitialRunLog,
 } from "./state.js"
+import {
+  evaluateStopHook,
+  formatStopEvaluateOutput,
+  parseStopHookInput,
+} from "./stopEvaluate.js"
 import type { GoalAction, ParsedCli } from "./types.js"
 import { PACKAGE_VERSION } from "./version.js"
 import { workingTreeSummary } from "./validation.js"
@@ -29,6 +34,11 @@ const CONTINUE_HINT = "Continue in Cursor Agent chat with: /goal resume"
 
 async function main(argv: string[]) {
   const command = parseCli(argv)
+  if (command.action === "stop-evaluate") {
+    await runStopEvaluate()
+    return
+  }
+
   const stateDir = resolveStateDir(command.cwd, command.stateDir)
   await actionHandlers[command.action]({ command, stateDir })
 }
@@ -118,6 +128,10 @@ const actionHandlers: Record<GoalAction, (ctx: HandlerContext) => Promise<void>>
   resume: async ({ command, stateDir }) => {
     await editOrResume({ command, stateDir, label: "Resumed" })
   },
+
+  "stop-evaluate": async () => {
+    await runStopEvaluate()
+  },
 }
 
 async function editOrResume(options: { command: ParsedCli; stateDir: string; label: "Edited" | "Resumed" }) {
@@ -185,6 +199,25 @@ async function unlinkConversationIndex(command: ParsedCli, stateDir: string) {
     await clearConversationIndex(command.conversationId)
   }
   await clearConversationIndexForStateDir(stateDir)
+}
+
+async function runStopEvaluate() {
+  const raw = await readStdinText()
+  const input = parseStopHookInput(JSON.parse(raw || "{}") as unknown)
+  const output = await evaluateStopHook(input)
+  process.stdout.write(formatStopEvaluateOutput(output))
+}
+
+async function readStdinText() {
+  if (process.stdin.isTTY) {
+    return ""
+  }
+
+  const chunks: Buffer[] = []
+  for await (const chunk of process.stdin) {
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk)
+  }
+  return Buffer.concat(chunks).toString("utf8")
 }
 
 main(process.argv.slice(2)).catch((error) => {

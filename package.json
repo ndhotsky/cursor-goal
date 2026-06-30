@@ -40,6 +40,7 @@
     "CHANGELOG.md",
     ".cursor/skills/goal/SKILL.md",
     "scripts/install-skill.sh",
+    "scripts/evaluate-goal.sh",
     "docs",
     "examples"
   ],

@@ -65,3 +65,7 @@ test("conversation id flags parse on set and resume", () => {
 test("rejects empty conversation id", () => {
   assert.throws(() => parseCli(["resume", "--conversation-id", "   "], {}), /--conversation-id/)
 })
+
+test("stop-evaluate maps to stop hook action", () => {
+  assert.equal(parseCli(["stop-evaluate"], {}).action, "stop-evaluate")
+})

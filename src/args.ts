@@ -24,6 +24,7 @@ const CLI_ACTION_SPECS: Record<string, CliActionSpec> = {
   edit: { action: "edit", objectiveFromRest: true },
   checkpoint: { action: "checkpoint", objectiveFromRest: false },
   prompt: { action: "prompt", objectiveFromRest: false },
+  "stop-evaluate": { action: "stop-evaluate", objectiveFromRest: false },
   help: { action: "help", objectiveFromRest: false },
   version: { action: "version", objectiveFromRest: false },
 }
@@ -95,6 +96,7 @@ Usage:
   cursor-goal edit "<objective>"                     Replace goal text
   cursor-goal prompt                                 Print the continuation prompt for the active goal
   cursor-goal checkpoint                             Record a checkpoint after agent work (stdin or --assistant-file)
+  cursor-goal stop-evaluate                          Evaluate a Cursor stop hook (JSON on stdin; JSON on stdout)
 
 Options:
   -v, --verify <cmd>              Verification command. Repeatable; joined with &&.
