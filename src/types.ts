@@ -14,6 +14,7 @@ export type GoalDecisionStatus = "complete" | "continue" | "blocked"
 
 export type GoalAction =
   | "status"
+  | "list"
   | "set"
   | "pause"
   | "resume"
@@ -21,8 +22,19 @@ export type GoalAction =
   | "edit"
   | "checkpoint"
   | "prompt"
+  | "stop-evaluate"
   | "help"
   | "version"
+
+export type CompletedGoalSummary = {
+  goalId: string
+  objective: string
+  status: "complete"
+  completedAt: string
+  cwd: string
+  workspaceKey: string
+  runLogPath: string
+}
 
 export type ModelTier = "auto" | "fast" | "standard"
 
@@ -79,6 +91,13 @@ export type GoalHistoryEvent = {
   details?: Record<string, unknown>
 }
 
+export type ConversationIndexEntry = {
+  conversation_id: string
+  state_dir: string
+  workspace_root: string
+  linked_at: string
+}
+
 export type GoalState = {
   schemaVersion: 1
   goalId: string
@@ -126,6 +145,8 @@ export type ParsedCli = {
   json: boolean
   assistantFile?: string
   toolCalls?: number
+  conversationId?: string
+  workspaceRoot?: string
 }
 
 export type CheckpointOutcome = {

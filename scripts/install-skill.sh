@@ -45,7 +45,7 @@ find_skill_source() {
   fi
 
   echo "error: could not find cursor-goal skill source (expected SKILL.md under package .cursor/skills/goal)" >&2
-  echo "hint: reinstall with: npm install -g cursor-goal" >&2
+  echo "hint: run npm run build && npm link from your cursor-goal clone" >&2
   return 1
 }
 
@@ -62,8 +62,10 @@ Usage:
   --global, -g    Install to ~/.cursor/skills/goal (all workspaces)
   target-dir      Install to <target-dir>/.cursor/skills/goal (default: $PWD)
 
-After a global npm install:
-  npm install -g cursor-goal
+After cloning and linking:
+
+  git clone https://github.com/ndhotsky/cursor-goal.git
+  cd cursor-goal && npm install && npm run build && npm link
   cursor-goal-install-skill --global
 EOF
 }

@@ -31,14 +31,18 @@ export function resolveStateDir(cwd: string, explicit?: string) {
   return explicit ? path.resolve(explicit) : defaultStateDir(cwd)
 }
 
+export function resolveCursorGoalStateRoot() {
+  const stateRoot = process.env.XDG_STATE_HOME
+    ? path.resolve(process.env.XDG_STATE_HOME)
+    : path.join(os.homedir(), ".local", "state")
+  return path.join(stateRoot, "cursor-goal")
+}
+
 export function defaultStateDir(cwd: string) {
   const resolved = path.resolve(cwd)
   const slug = slugify(path.basename(resolved) || "workspace")
   const hash = crypto.createHash("sha256").update(resolved).digest("hex").slice(0, 12)
-  const stateRoot = process.env.XDG_STATE_HOME
-    ? path.resolve(process.env.XDG_STATE_HOME)
-    : path.join(os.homedir(), ".local", "state")
-  return path.join(stateRoot, "cursor-goal", "workspaces", `${slug}-${hash}`)
+  return path.join(resolveCursorGoalStateRoot(), "workspaces", `${slug}-${hash}`)
 }
 
 export function currentStatePath(stateDir: string) {

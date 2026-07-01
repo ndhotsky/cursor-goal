@@ -1,5 +1,9 @@
 # Publishing
 
+This fork is distributed **from source** (`git clone` + `npm link`). See [`install.md`](install.md).
+
+Use this doc when cutting tagged GitHub releases for `ndhotsky/cursor-goal`.
+
 ## Release checklist
 
 Before tagging a release:
@@ -14,72 +18,48 @@ npm pack --dry-run
 
 Confirm the tarball includes:
 
-- `dist/`, `scripts/install-skill.sh`, `.cursor/skills/goal/SKILL.md`
-- `cursor-goal-install-skill` is listed under `bin` in `package.json`
+- `dist/`, `scripts/install-skill.sh`, `scripts/install-hook.sh`, `scripts/evaluate-goal.sh`
+- `.cursor/skills/goal/SKILL.md`
+- `cursor-goal`, `cursor-goal-install-skill`, and `cursor-goal-install-hook` under `bin` in `package.json`
 
-Optional live smoke (temp directory): see [`smoke-test.md`](smoke-test.md).
+Optional live smoke: see [`smoke-test.md`](smoke-test.md).
 
 ## Version bump
 
 1. Update `package.json` `version`.
 2. Add a section to [`CHANGELOG.md`](../CHANGELOG.md).
 3. Merge to `main` with green CI.
-4. Tag and publish (below).
+4. Tag and publish a GitHub release (below).
 
 ## GitHub release
 
 Tag should point at `main` after CI is green:
 
 ````bash
-gh release create v0.3.2 --title "v0.3.2" --notes-file - <<'EOF'
+gh release create v0.4.0 --title "v0.4.0" --notes-file - <<'EOF'
 ## Summary
 
-- Public repo polish: clearer in-chat Cursor workflow language.
-- Removed planning-only notes from packaged docs.
-- Dropped unused single-package pnpm workspace metadata.
-- See [CHANGELOG.md](https://github.com/Niko96-dotcom/cursor-goal/blob/main/CHANGELOG.md) for full notes.
+- Stop hook enforcement layer (conversation index, stop-evaluate, hook installer).
+- See [CHANGELOG.md](https://github.com/ndhotsky/cursor-goal/blob/main/CHANGELOG.md) for full notes.
 
 ## Install
 
 ```bash
-npm install -g cursor-goal
-cursor-goal-install-skill --global
+git clone https://github.com/ndhotsky/cursor-goal.git
+cd cursor-goal
+npm install && npm run build && npm link
+npm run install-skill:global
+npm run install-hook:global
 ```
 
-Then in Cursor Agent chat: `/goal <objective>`
+Then in local Cursor Agent chat: `/goal <objective>`
 
-Docs: https://github.com/Niko96-dotcom/cursor-goal/blob/main/docs/install.md
+Docs: https://github.com/ndhotsky/cursor-goal/blob/main/docs/install.md
 EOF
 ````
 
-Publishing a GitHub release triggers `.github/workflows/publish-npm.yml` when Trusted Publisher is configured.
+## Optional npm publish
 
-## npm
+The upstream project publishes to npm as `cursor-goal`; **this fork does not rely on that package**. If you choose to publish this fork under a new npm name or scope, configure Trusted Publisher on npm and use [`.github/workflows/publish-npm.yml`](../.github/workflows/publish-npm.yml) with your repository settings.
 
-### First publish (local, one time)
-
-```bash
-npm login
-npm publish --access public
-```
-
-### Automated publishes (recommended)
-
-1. On [npmjs.com](https://www.npmjs.com/package/cursor-goal) → **Settings → Trusted Publishers** → add:
-   - **Provider:** GitHub Actions
-   - **Repository:** `Niko96-dotcom/cursor-goal`
-   - **Workflow filename:** `publish-npm.yml`
-   - **Environment:** (leave empty unless you use one)
-2. Publish a GitHub release (`release: published`) — CI runs `npm publish` with OIDC (no `NPM_TOKEN` secret).
-
-Workflow: [`.github/workflows/publish-npm.yml`](../.github/workflows/publish-npm.yml).
-
-### Trusted Publisher troubleshooting
-
-If **Publish npm** fails with `ENEEDAUTH` / `need auth`:
-
-- Trusted Publisher is not linked yet, or workflow filename/repo do not match npm settings.
-- Fix npm Trusted Publisher, then re-run the workflow or publish a new GitHub release.
-- One-time fallback: `npm login` locally and `npm publish --access public` from a clean `main` checkout after `npm run build`.
-
-Manual workflow dispatch also requires Trusted Publisher; it does not use a stored token.
+Until then, ignore the publish workflow or disable it in GitHub Actions settings.

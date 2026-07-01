@@ -1,18 +1,19 @@
 # Contributing
 
-Thanks for helping make `cursor-goal` less janky and more useful.
+Thanks for helping improve this fork.
 
 ## Local setup
 
 ```bash
-git clone https://github.com/Niko96-dotcom/cursor-goal.git
+git clone https://github.com/ndhotsky/cursor-goal.git
 cd cursor-goal
 npm install
 npm run typecheck
 npm test
 npm run build
 npm link
-npm run install-skill:global   # or: npm run install-skill for project-only
+npm run install-skill:global
+npm run install-hook:global
 ```
 
 Install paths for end users: [`docs/install.md`](docs/install.md).
@@ -23,7 +24,7 @@ Install paths for end users: [`docs/install.md`](docs/install.md).
 npm run dev -- "Inspect this repo and write a short architecture note" --verify "test -f docs/architecture.md" --once
 ```
 
-Use `/goal` in Cursor Agent chat for the actual agent loop. The CLI records state and checkpoints only.
+Use `/goal` in Cursor Agent chat for the actual agent loop. The CLI records state and checkpoints; the stop hook (when installed) enforces turn-end verification.
 
 ## Before a PR
 
@@ -32,7 +33,7 @@ npm run typecheck
 npm test
 ```
 
-Add tests for parser, lifecycle, checkpoint policy, and validation safety changes.
+Add tests for parser, lifecycle, checkpoint policy, stop-hook evaluation, and validation safety changes.
 
 ## Pull request expectations
 
