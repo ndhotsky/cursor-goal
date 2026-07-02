@@ -155,9 +155,7 @@ async function editOrResume(options: { command: ParsedCli; stateDir: string; lab
     `## ${label}\n\nAt: ${new Date().toISOString()}${command.objective ? `\n\nNew objective:\n${command.objective}` : ""}`
   )
   await saveGoalState(stateDir, state)
-  if (label === "Resumed") {
-    await syncConversationIndex(command, stateDir)
-  }
+  await syncConversationIndex(command, stateDir)
   console.log(label === "Edited" ? "Goal edited." : "Goal resumed.")
   console.log(CONTINUE_HINT)
   printStatus(state, command.json)
@@ -204,7 +202,13 @@ async function unlinkConversationIndex(command: ParsedCli, stateDir: string) {
 
 async function runStopEvaluate() {
   const raw = await readStdinText()
-  const input = parseStopHookInput(JSON.parse(raw || "{}") as unknown)
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw || "{}")
+  } catch {
+    throw new Error("Stop hook input must be valid JSON on stdin.")
+  }
+  const input = parseStopHookInput(parsed)
   const output = await evaluateStopHook(input)
   process.stdout.write(formatStopEvaluateOutput(output))
 }

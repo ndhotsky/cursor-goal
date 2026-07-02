@@ -13,6 +13,9 @@ export function tailText(value: string, max: number) {
 }
 
 export function redactHome(value: string) {
-  const home = process.env.HOME ?? ""
-  return home && value.startsWith(home) ? `~${value.slice(home.length)}` : value
+  const home = process.env.HOME
+  if (home && (value === home || value.startsWith(`${home}/`))) {
+    return `~${value.slice(home.length)}`
+  }
+  return value
 }

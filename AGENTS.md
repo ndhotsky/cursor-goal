@@ -1,6 +1,6 @@
 # Agent guidance for cursor-goal
 
-This repository builds a small TypeScript CLI around local `.goal/` state for Codex-style `/goal` loops in Cursor Agent chat.
+This repository builds a small TypeScript CLI around durable goal state for Codex-style `/goal` loops in Cursor Agent chat. State lives outside the workspace by default (under the user state directory, e.g. `~/.local/state/cursor-goal/`); workspace-local `.goal/` remains available as a legacy opt-in.
 
 End-user install: `docs/install.md`. Releases: `docs/publishing.md`, `CHANGELOG.md`.
 

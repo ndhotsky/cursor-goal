@@ -4,6 +4,22 @@ All notable changes to this project are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- Cursor stop-hook enforcement: `cursor-goal stop-evaluate` reads the Cursor stop-hook JSON, re-runs verification for the linked goal, and blocks turn-end with a `followup_message` until verification passes or the turn budget is reached.
+- Conversation linking via `--conversation-id` / `--workspace-root` on `set`, `resume`, and `edit`, backed by a hashed conversation index under the user state directory.
+- `cursor-goal list [--json]` for completed goals across workspaces.
+- `cursor-goal-install-hook` binary and `scripts/install-hook.sh` for installing the stop hook into `~/.cursor/hooks.json`.
+
+### Fixed
+
+- `edit --conversation-id` now re-links the conversation index (previously only `set` and `resume` did), so the stop hook tracks edited goals.
+- Malformed stop-hook stdin now fails with a clear "must be valid JSON" error instead of a raw parse error.
+- Checkpoint changed-file tracking now uses `git status --porcelain`, so staged and untracked files are recorded in run logs (previously only unstaged edits were).
+- Home-directory redaction no longer redacts sibling paths that merely share the home prefix (for example `/home/user2` when home is `/home/user`).
+
 ## [0.3.2] - 2026-05-26
 
 ### Changed

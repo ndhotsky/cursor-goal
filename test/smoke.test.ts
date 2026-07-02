@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url"
 import test from "node:test"
 import assert from "node:assert/strict"
 import { recordCheckpoint } from "../src/checkpoint.js"
+import { loadConversationIndex } from "../src/conversationIndex.js"
 import { currentStatePath, loadGoalState, saveGoalState } from "../src/state.js"
 import { sampleGoalState, sampleParsedCli } from "./helpers/goalFixtures.js"
 
@@ -121,4 +122,36 @@ test("CLI checkpoint command records completion", async () => {
 
   assert.equal(checkpoint.status, 0, checkpoint.stderr)
   assert.match(checkpoint.stdout ?? "", /Goal: complete/)
+})
+
+test("edit relinks the conversation index", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "cursor-goal-edit-link-"))
+  const stateDir = path.join(tmp, ".goal")
+  const conversationsRoot = path.join(tmp, "conversations")
+  const env = { CURSOR_GOAL_CONVERSATIONS_DIR: conversationsRoot }
+
+  const set = runCli(["Initial objective", "--state-dir", stateDir, "--cwd", tmp], env)
+  assert.equal(set.status, 0, set.stderr)
+  assert.equal(await loadConversationIndex("conv-edit-1", conversationsRoot), null)
+
+  const edit = runCli(
+    ["edit", "Refined objective", "--state-dir", stateDir, "--cwd", tmp, "--conversation-id", "conv-edit-1"],
+    env
+  )
+  assert.equal(edit.status, 0, edit.stderr)
+
+  const linked = await loadConversationIndex("conv-edit-1", conversationsRoot)
+  assert.ok(linked, "edit --conversation-id should link the conversation index")
+  assert.equal(linked.state_dir, stateDir)
+})
+
+test("stop-evaluate rejects malformed stdin JSON with a clear error", () => {
+  const result = spawnSync("npx", ["tsx", cliEntry, "stop-evaluate"], {
+    cwd: repoRoot,
+    input: "this is not json{",
+    encoding: "utf8",
+  })
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr ?? "", /must be valid JSON/)
 })
