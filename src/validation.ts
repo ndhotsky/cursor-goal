@@ -105,16 +105,24 @@ export async function runValidation(options: {
 
 export function listGitChangedFiles(cwd: string): string[] {
   try {
-    return execFileSync("git", ["-C", cwd, "diff", "--name-only"], {
+    return execFileSync("git", ["-C", cwd, "status", "--porcelain"], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     })
       .split(/\r?\n/)
-      .map((line) => line.trim())
+      .filter((line) => line.length > 3)
+      .map((line) => porcelainPath(line.slice(3)))
       .filter(Boolean)
   } catch {
     return []
   }
+}
+
+function porcelainPath(entry: string) {
+  // Renames/copies are reported as "old -> new"; keep the destination path.
+  const arrow = entry.indexOf(" -> ")
+  const target = arrow === -1 ? entry : entry.slice(arrow + 4)
+  return target.replace(/^"(.*)"$/, "$1").trim()
 }
 
 export function workingTreeSummary(cwd: string): string {

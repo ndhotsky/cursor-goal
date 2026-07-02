@@ -1,5 +1,5 @@
 import type { GoalState, ValidationResult } from "./types.js"
-import { clipInline, truncateText } from "./text.js"
+import { clipInline, redactHome, truncateText } from "./text.js"
 import {
   appendRunLog,
   loadGoalState,
@@ -176,15 +176,7 @@ function formatHookValue(value?: string) {
 function formatTranscriptPath(value?: string | null) {
   if (value === null) return "not available (transcripts disabled)"
   if (!value) return "not provided"
-  return `present (${clipInline(redactHomePath(value), 500)})`
-}
-
-function redactHomePath(value: string) {
-  const home = process.env.HOME
-  if (home && (value === home || value.startsWith(`${home}/`))) {
-    return `~${value.slice(home.length)}`
-  }
-  return value
+  return `present (${clipInline(redactHome(value), 500)})`
 }
 
 function buildContinueOutput(state: GoalState, reason: string): StopEvaluateOutput {
