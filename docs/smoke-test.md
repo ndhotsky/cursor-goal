@@ -4,13 +4,16 @@ Zero-token proof that the `cursor-goal` CLI lifecycle and checkpoint behavior wo
 
 ## Prerequisites
 
-CLI on PATH from either:
+CLI on PATH from a source checkout:
 
 ```bash
-npm install -g cursor-goal
+git clone https://github.com/ndhotsky/cursor-goal.git
+cd cursor-goal
+npm install
+npm run build
+test -f dist/index.js
+npm link
 ```
-
-or a source checkout with `npm link` after `npm run build`.
 
 Skill install is **not** required for `npm test` (CLI-only). For manual `/goal` in Cursor, install the skill first — see [`install.md`](install.md).
 
@@ -26,6 +29,8 @@ npm test
 | `test/smoke.test.ts` | `recordCheckpoint()` with real shell verification |
 | `test/smoke.test.ts` | `cursor-goal checkpoint` via stdin |
 | `test/loopPolicy.test.ts` | Completion vs validation vs spin-loop blocking |
+| `test/stopEvaluate.test.ts` | Stop hook evaluator paths |
+| `test/install-hook.test.sh` | Hook installer merge behavior |
 | parser/args/validation tests | Codex-style parsing and safety |
 
 ## CLI live smoke (no Cursor UI)
@@ -34,7 +39,7 @@ Automated E2E in a temp directory: set goal → create artifact → `checkpoint`
 
 ## Manual `/goal` proof in Cursor
 
-1. Install skill: `cursor-goal-install-skill --global` (or `npm run install-skill:global` from clone).
+1. From your clone: `npm run install-skill:global` (and `npm run install-hook:global` for hard enforcement).
 2. In Agent chat:
 
 ```text
@@ -49,3 +54,20 @@ cursor-goal --json
 ```
 
 Uses your Cursor subscription.
+
+## Stop hook manual test (local IDE)
+
+Requires a built source checkout, global skill + hook (`npm run build`, `npm run install-skill:global`, `npm run install-hook:global`), and **local** Agent chat (not Cloud Agents).
+
+1. In a repo with a failing test, set a goal linked to the active chat from the project root. Use `CURSOR_CONVERSATION_ID` if available; otherwise pass or link the active chat id explicitly:
+
+```bash
+cursor-goal "Fix the failing test" --verify "npm test" \
+  --conversation-id "<your-chat-id>" \
+  --workspace-root "$PWD"
+```
+
+2. In Agent chat: `/goal Fix the failing test; verify with npm test`
+3. Let the agent try to stop while tests still fail — the hook should auto-continue with a `followup_message`.
+4. After the fix lands and `npm test` passes, the next turn end should allow stop and `cursor-goal` should show `complete`.
+5. In a normal chat with no active goal, turn end should not loop (hook returns `{}`).

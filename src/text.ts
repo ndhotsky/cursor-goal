@@ -11,3 +11,8 @@ export function clipInline(value: string, max: number) {
 export function tailText(value: string, max: number) {
   return value.length <= max ? value : value.slice(value.length - max)
 }
+
+export function redactHome(value: string) {
+  const home = process.env.HOME ?? ""
+  return home && value.startsWith(home) ? `~${value.slice(home.length)}` : value
+}

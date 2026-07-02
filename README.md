@@ -1,124 +1,203 @@
 # cursor-goal
 
-A Codex-style `/goal` loop for **Cursor Agent chat**, with durable local state outside the workspace by default.
+Persistent `/goal` loops for **Cursor Agent chat** — with optional **harness enforcement** so the agent cannot stop until verification passes.
 
-The agent loop runs in your existing Cursor chat, similar to Codex Goal mode. The CLI manages goal state, verification, and checkpoint accounting while **you** and the in-chat `/goal` skill do the work.
+Inspired by Codex Goal mode and Claude Code’s `/goal`, extended for Cursor with durable local state, a global skill, and a `stop` hook hard gate.
 
-**Install (npm):** `npm install -g cursor-goal && cursor-goal-install-skill --global`
+**Repo:** https://github.com/ndhotsky/cursor-goal
 
-**Repo:** https://github.com/Niko96-dotcom/cursor-goal · **npm:** https://www.npmjs.com/package/cursor-goal
+---
 
-## What it copies from Codex Goal mode
+## What this is
 
-- `/goal <objective>` sets or replaces the active goal.
-- `/goal` / `cursor-goal` shows the current goal.
-- `/goal pause`, `/goal resume`, `/goal clear`, and `/goal edit` manage lifecycle.
-- Goal text is both the starting prompt and completion criteria.
-- Durable local state and audit logs without writing workspace `.goal/` by default.
-- Each checkpoint ends with `GOAL_STATUS` / `GOAL_REASON` and optional shell verification.
-- Continuation is suppressed when verification fails with no tool calls.
+Most “keep working until done” setups rely on the model obeying prompts. That fails the moment the agent decides it is finished.
 
-## Requirements
+`cursor-goal` splits the problem into three layers:
 
-- Node.js 22+
-- Cursor Agent chat (for the loop itself)
-- `cursor-goal` on PATH and the goal skill installed (see [Install](#install))
+| Layer | What it does |
+|-------|----------------|
+| **CLI** (`cursor-goal`) | Goal lifecycle, shell verification, checkpoints, audit logs |
+| **Skill** (`/goal`) | Command UX in Agent chat |
+| **Stop hook** | Runs at every turn end in local Agent chat; returns `followup_message` until the goal passes verification |
 
-## Install
+Without the stop hook, you get Codex-style cooperative checkpoints (skill + CLI). **With the stop hook**, completion is decided by the harness — closer to Claude Code `/goal`.
 
-### npm (recommended)
-
-```bash
-npm install -g cursor-goal
-cursor-goal-install-skill --global
+```text
+/goal in chat  →  agent works a turn
+              →  stop hook: load goal by conversation_id
+              →  run verify command
+              →  fail? auto-continue with evidence
+              →  pass? mark complete, allow stop
 ```
 
-### From source
+**Local IDE only for enforcement:** Cursor `stop` hooks run in local Agent chat today, not in Cloud Agent VMs. Cloud sessions still get skill + CLI behavior without the hard gate.
+
+---
+
+## Install (from source)
+
+Requires **Node.js 22+** and **Cursor Agent chat**.
 
 ```bash
-git clone https://github.com/Niko96-dotcom/cursor-goal.git
+git clone https://github.com/ndhotsky/cursor-goal.git
 cd cursor-goal
 npm install
 npm run build
 npm link
 npm run install-skill:global
+npm run install-hook:global
 ```
 
-Full paths, uninstall, and troubleshooting: [`docs/install.md`](docs/install.md).
+Confirm:
 
-## Use `/goal` in Cursor (primary)
+```bash
+cursor-goal --version
+test -f dist/index.js
+test -f ~/.cursor/skills/goal/SKILL.md
+test -f ~/.cursor/hooks.json
+```
+
+Project-local skill/hook instead of global:
+
+```bash
+npm run build
+npm run install-skill
+npm run install-hook
+```
+
+Full options, env vars, uninstall, troubleshooting: [`docs/install.md`](docs/install.md).
+
+---
+
+## Quick start in Cursor
+
+1. Open Agent chat in a project (local IDE).
+2. Run something like:
 
 ```text
 /goal Make the auth test suite pass without changing public API behavior. Verify with npm test -- auth.
 ```
 
-The skill runs the loop in the **current chat**:
+3. The skill sets durable state and works the goal in the current chat.
+4. If the stop hook is installed and the goal is linked to this chat (see below), the agent **cannot stop** while verification still fails.
 
-1. Sets durable local state via `cursor-goal` when needed.
-2. Makes checkpoint progress with normal Cursor tools.
-3. Ends each checkpoint with `GOAL_STATUS` / `GOAL_REASON`.
-4. Records evidence with `cursor-goal checkpoint` (verification + state update).
-5. Continues while status is `active` and budget remains.
+### Linking a goal to the active chat (for the stop hook)
 
-## CLI (state + verification helpers)
+The hook resolves goals via the active `conversation_id`. When setting or resuming from the CLI:
+
+```bash
+cursor-goal "Fix auth tests" --verify "npm test" \
+  --conversation-id "<cursor-chat-id>" \
+  --workspace-root "$PWD"
+```
+
+Pass `--conversation-id` when available (for example `CURSOR_CONVERSATION_ID` in the environment). If Cursor does not expose that env var, pass or link the active chat id explicitly. Without a goal linked to the active chat, the hook no-ops on turn end — normal chats are unaffected.
+
+---
+
+## Commands
+
+### In chat
+
+| Command | Action |
+|---------|--------|
+| `/goal <objective>` | Set/replace goal and work toward it |
+| `/goal` | Show status |
+| `/goal pause` / `resume` / `clear` / `edit` | Lifecycle |
+
+### CLI
 
 ```bash
 cursor-goal                                         # status
+cursor-goal list                                    # completed goals across workspaces
 cursor-goal "<objective>" --verify "npm test"       # set goal
 cursor-goal pause | resume | clear | edit "<obj>"   # lifecycle
-cursor-goal prompt                                  # print continuation contract
-cursor-goal checkpoint --tool-calls 3 <<'EOF'       # after a checkpoint
+cursor-goal prompt                                  # continuation contract
+cursor-goal checkpoint --tool-calls 3 <<'EOF'       # record checkpoint (audit)
 ...
 GOAL_STATUS: CONTINUE
 GOAL_REASON: two tests still failing
 EOF
 ```
 
-Setting or resuming a goal prints: `Continue in Cursor Agent chat with: /goal resume`
+With stop hook installed, **`checkpoint` is for audit**; turn-end verification in the hook is the hard gate.
 
-Alias: `cgoal` (same binary).
+Install helpers:
 
-## Strong goal pattern
+```bash
+cursor-goal-install-skill --global
+cursor-goal-install-hook --global
+```
+
+Alias: `cgoal`.
+
+---
+
+## Goal pattern
 
 ```text
-/goal <desired end state>, verified by <specific command or artifact>, while preserving <constraints>. Use <allowed files/tools>. Between checkpoints, record what changed, what evidence was checked, and the next best action. If blocked, stop with the blocker and the input needed.
+/goal <desired end state>, verified by <specific command or artifact>, while preserving <constraints>. Use <allowed files/tools>. If blocked, stop with the blocker and the input needed.
 ```
 
 More examples: [`examples/goal-prompts.md`](examples/goal-prompts.md).
 
-## How it works
+---
 
-```text
-Cursor chat (/goal)  →  work + GOAL_STATUS lines
-                     →  cursor-goal checkpoint  →  verify shell cmd  →  local state
-                     →  continue in chat if still active
+## State and privacy
+
+- **No network calls.** No telemetry. Verification runs local shell commands you configure.
+- **State lives outside the repo** by default: `~/.local/state/cursor-goal/workspaces/<hash>/` (or `$XDG_STATE_HOME/...`).
+- **Conversation index** (for the stop hook): `~/.local/state/cursor-goal/conversations/`.
+- Legacy workspace-local state: `--state-dir .goal` or `CURSOR_GOAL_STATE_SCOPE=workspace`.
+
+Treat `--verify` like `bash -c` — only commands you would run yourself.
+
+---
+
+## Architecture
+
+| Component | Role |
+|-----------|------|
+| `src/state.ts`, `src/checkpoint.ts` | Goal state machine, checkpoint accounting |
+| `src/conversationIndex.ts` | Map `conversation_id` → workspace state |
+| `src/stopEvaluate.ts` | Stop hook evaluator (`cursor-goal stop-evaluate`) |
+| `scripts/evaluate-goal.sh` | Wrapper invoked from `~/.cursor/hooks.json` |
+| `.cursor/skills/goal/SKILL.md` | `/goal` skill surface |
+
+The hook installer writes a `stop` entry with `type: "command"`, `loop_limit: null`, and `timeout: 120`. Global installs store an absolute command path; project installs store a project-root-relative path only when `scripts/evaluate-goal.sh` is inside that project root.
+
+Stop-hook run logs include safe provenance only: `conversation_id`, `generation_id`, and whether a transcript path was present (with `$HOME` redacted). The hook does not read transcript contents.
+
+---
+
+## Verify it works
+
+```bash
+npm test
 ```
 
-By default, state is stored under the user state directory (`$XDG_STATE_HOME/cursor-goal/...` or `~/.local/state/cursor-goal/...`) so a workspace does not gain a `.goal/` directory. Use `--state-dir .goal` or `CURSOR_GOAL_STATE_SCOPE=workspace` for legacy workspace-local state.
+Manual stop-hook acceptance (local IDE): [`docs/smoke-test.md`](docs/smoke-test.md#stop-hook-manual-test-local-ide).
 
-## Verification
-
-See [`docs/smoke-test.md`](docs/smoke-test.md). `npm test` is zero-token smoke for CLI lifecycle + checkpoint recording.
+---
 
 ## Docs
 
 | Doc | Purpose |
 |-----|---------|
-| [`docs/install.md`](docs/install.md) | Install, skill, uninstall, troubleshooting |
+| [`docs/install.md`](docs/install.md) | Install, hooks, uninstall, troubleshooting |
 | [`docs/smoke-test.md`](docs/smoke-test.md) | Automated and manual verification |
-| [`docs/publishing.md`](docs/publishing.md) | Releases and npm CI |
 | [`docs/codex-goal-research.md`](docs/codex-goal-research.md) | Codex Goal-mode alignment notes |
-| [`docs/native-parity.md`](docs/native-parity.md) | Native Codex vs Cursor parity harness and contract |
+| [`docs/native-parity.md`](docs/native-parity.md) | Native Codex vs Cursor parity harness |
 | [`CHANGELOG.md`](CHANGELOG.md) | Version history |
 
-## Contributing
+---
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+## Lineage
 
-## Disclaimer
+Forked and extended from [Niko96-dotcom/cursor-goal](https://github.com/Niko96-dotcom/cursor-goal) (Codex-style skill + CLI). This repo adds conversation-linked state and Cursor `stop` hook enforcement.
 
-This project is unofficial and not affiliated with, endorsed by, or sponsored by OpenAI (Codex) or Cursor. Codex and Cursor are trademarks of their respective owners. `cursor-goal` implements a similar workflow inspired by public Codex Goal-mode documentation.
+Unofficial project — not affiliated with OpenAI (Codex) or Cursor.
 
 ## License
 
-MIT
+MIT (see [`LICENSE`](LICENSE)).

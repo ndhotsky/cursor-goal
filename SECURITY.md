@@ -6,9 +6,9 @@ Install and scope: [`docs/install.md`](docs/install.md).
 
 ## Reporting issues
 
-For non-sensitive bugs, open a [GitHub issue](https://github.com/Niko96-dotcom/cursor-goal/issues/new). Do not paste secrets, tokens, or private goal run logs.
+For non-sensitive bugs, open a [GitHub issue](https://github.com/ndhotsky/cursor-goal/issues/new). Do not paste secrets, tokens, or private goal run logs.
 
-For sensitive reports, use [GitHub Security Advisories](https://github.com/Niko96-dotcom/cursor-goal/security/advisories/new) (private disclosure) or contact [@Niko96-dotcom](https://github.com/Niko96-dotcom) directly.
+For sensitive reports, use [GitHub Security Advisories](https://github.com/ndhotsky/cursor-goal/security/advisories/new) (private disclosure).
 
 ## Safety defaults
 
